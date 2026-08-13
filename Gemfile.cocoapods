@@ -1,0 +1,5 @@
+source 'https://rubygems.org'
+
+gem 'cocoapods', '1.15.2'
+gem 'ffi', '1.15.5'
+gem 'activesupport', '< 7.1'
