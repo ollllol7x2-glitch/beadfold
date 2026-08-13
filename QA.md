@@ -18,12 +18,13 @@ Tests cover recipe determinism, history/gear explanation and water/time invarian
 
 ## Mobile web evidence
 
+- GitHub Pages production deployment succeeded for commit `476179e`; build and deploy completed through the repository workflow.
 - Completed onboarding and verified the Home/Journal/Add/Collection/Profile navigation labels from the production export.
 - Added a Bean using only name and remaining weight, opened its generated detail route, and created a Guided Recipe from persisted browser SQLite data.
 - Verified the Brew preparation screen does not start time, the three-second countdown precedes extraction, and the active screen fits without scrolling at both 390×844 and 375×667.
 - Verified the active screen exposes a dominant remaining timer, current instruction, current/cumulative/next values, pause, next, and stop in the viewport.
 - Opened a second tab and verified it shows a plain-language one-tab safety/recovery state rather than a raw SQLite error.
-- Dynamic-route direct refresh is covered by the Pages `404.html` SPA fallback and is rechecked against the deployed Pages URL after release.
+- Created a Bean on the deployed site, refreshed its generated `/bean/:id` URL directly, and verified the same persisted detail screen returned with no console errors through the Pages `404.html` SPA fallback.
 
 ## UX/UI redesign verification
 

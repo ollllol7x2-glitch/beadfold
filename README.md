@@ -2,6 +2,8 @@
 
 BEANFOLD is a local-first coffee companion for the loop **Know → Brew → Record → Compare → Discover**. The MVP is an Expo/React Native app backed by SQLite; no account or network is required for its core flows.
 
+**Mobile web:** [https://ollllol7x2-glitch.github.io/beadfold/](https://ollllol7x2-glitch.github.io/beadfold/)
+
 ## Run
 
 Requirements: Node.js 24+, pnpm 11+, and either Xcode with an iOS Simulator or Android Studio with an emulator.
@@ -13,7 +15,7 @@ pnpm start
 
 Press `i` for iOS or `a` for Android. Native development builds can also be created with `pnpm ios` and `pnpm android`.
 
-The mobile web app is published at the repository's GitHub Pages URL. It uses Expo's single-page export plus a `404.html` fallback so locally generated Bean, Cup, Recipe, and Brew URLs can be refreshed directly. To create the same export locally:
+The mobile web app is published with GitHub Pages. It uses Expo's single-page export plus a `404.html` fallback so locally generated Bean, Cup, Recipe, and Brew URLs can be refreshed directly. To create the same export locally:
 
 ```bash
 pnpm export:web
