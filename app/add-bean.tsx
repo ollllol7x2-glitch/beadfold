@@ -8,6 +8,7 @@ import { createBean, getBean, matchKnowledgeFromLabel, trackEvent, updateBean } 
 import type { BeanLot, BeanState, RoastLevel } from '@/domain/types';
 import { colors, radius, spacing } from '@/design-system/tokens';
 import { useFeedback } from '@/components/feedback';
+import { isBeanLabelOcrAvailable, recognizeBeanLabel, type BeanLabelOcrResult } from '@/services/beanLabelOcr';
 
 const roastLevels: { value: RoastLevel; label: string }[] = [
   { value: 'unknown', label: '모름' },
@@ -44,6 +45,7 @@ export default function AddBeanScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
+  const [recognizing, setRecognizing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [existing, setExisting] = useState<BeanLot | null>(null);
   const [saved, setSaved] = useState<BeanLot | null>(null);
@@ -66,14 +68,49 @@ export default function AddBeanScreen() {
     const permission = camera ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) return setError(`${camera ? '카메라' : '사진 보관함'} 권한이 없어요. 이름만 입력해도 원두를 추가할 수 있어요.`);
     const result = camera
-      ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 })
-      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+      ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7, base64: true })
+      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, base64: true });
     if (!result.canceled && result.assets[0]) {
-      setImageUri(result.assets[0].uri);
+      const asset = result.assets[0];
+      setImageUri(asset.uri);
       setDetailsOpen(true);
-      setStatus('사진을 추가했어요. 봉투를 보면서 필요한 정보만 적어주세요.');
       void trackEvent(db, 'bean_photo_added', { source: camera ? 'camera' : 'gallery' });
+      if (!isBeanLabelOcrAvailable() || !asset.base64) {
+        setStatus('사진을 추가했어요. 봉투를 보면서 필요한 정보만 적어주세요.');
+        return;
+      }
+      setRecognizing(true);
+      setStatus('봉투 정보를 읽고 있어요. 잠시만 기다려주세요.');
+      try {
+        const result = await recognizeBeanLabel(asset.base64);
+        await applyOcrResult(result);
+      } catch (caught) {
+        setStatus(caught instanceof Error ? `${caught.message} 사진을 보며 직접 입력할 수 있어요.` : '자동 인식에 실패했어요. 사진을 보며 직접 입력할 수 있어요.');
+      } finally {
+        setRecognizing(false);
+      }
     }
+  };
+
+  const applyOcrResult = async (result: BeanLabelOcrResult) => {
+    const matches = await matchKnowledgeFromLabel(db, result.fullText);
+    const { candidates } = result;
+    setName((current) => current || candidates.beanName || '');
+    setRoaster((current) => current || candidates.roaster || '');
+    setRoastDate((current) => current || candidates.roastDate || '');
+    setRoastLevel((current) => current === 'unknown' && candidates.roastLevel ? candidates.roastLevel : current);
+    setNotes((current) => current || candidates.tastingNotes?.join(', ') || '');
+    for (const match of matches) {
+      if (match.category === 'country') setCountry((current) => current || match.name);
+      if (match.category === 'region') {
+        setRegion((current) => current || match.name);
+        if (match.parent_name) setCountry((current) => current || match.parent_name || '');
+      }
+      if (match.category === 'variety') setVariety((current) => current || match.name);
+      if (match.category === 'process') setProcess((current) => current || match.name);
+    }
+    const candidateCount = Object.values(candidates).filter(Boolean).length + matches.length;
+    setStatus(candidateCount ? `봉투에서 ${candidateCount}개 정보를 채웠어요. 저장 전 내용을 확인해주세요.` : '글자는 읽었지만 확실한 정보를 찾지 못했어요. 사진을 보며 직접 입력해주세요.');
   };
 
   const findFromLabel = async () => {
@@ -132,7 +169,7 @@ export default function AddBeanScreen() {
     <PageHeader title={existing ? '원두 정보 수정' : '새 원두 추가'} description={existing ? '바뀐 정보만 고쳐주세요.' : '이름과 남은 양만 알면 바로 시작할 수 있어요.'} action={<Button label="닫기" variant="tertiary" onPress={() => router.back()} />} />
 
     {!existing ? <View style={styles.sources}>
-      <SourceAction icon="camera.fill" title="봉투 촬영" body="사진을 보며 필요한 정보만 적어요" onPress={() => void pickImage(true)} />
+      <SourceAction icon="camera.fill" title="봉투 촬영" body="사진에서 필요한 정보를 찾아 채워요" onPress={() => void pickImage(true)} />
       <SourceAction icon="magnifyingglass" title="이름으로 찾기" body="봉투 문구에서 정보를 찾아요" onPress={() => setSearchOpen((current) => !current)} />
     </View> : null}
 
@@ -143,7 +180,8 @@ export default function AddBeanScreen() {
     </Card> : null}
 
     {imageUri ? <Image source={{ uri: imageUri }} style={styles.preview} accessibilityLabel="선택한 원두 패키지 사진" /> : null}
-    {status ? <Text accessibilityLiveRegion="polite" color={colors.success}>{status}</Text> : null}
+    {recognizing ? <Card tone="tinted"><View style={styles.scanStatus}><Icon name="magnifyingglass" size={21} color={colors.espresso} /><View style={styles.flex}><Text variant="title3">봉투 정보 확인 중</Text><Text color={colors.neutral800}>원두명과 산지, 로스팅 정보를 읽고 있어요.</Text></View></View></Card> : null}
+    {status ? <Text accessibilityLiveRegion="polite" color={colors.neutral800}>{status}</Text> : null}
     {error ? <Text accessibilityRole="alert" color={colors.error}>{error}</Text> : null}
 
     <Card style={styles.quickCard}>
@@ -189,5 +227,5 @@ const styles = StyleSheet.create({
   sourceIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
   quickCard: { gap: spacing.default }, disclosure: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: spacing.small, paddingVertical: spacing.compact }, disclosureCopy: { flex: 1, gap: 2 },
   details: { gap: spacing.default }, chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.compact }, flex: { flex: 1 },
-  preview: { width: '100%', height: 210, borderRadius: radius.large }, memo: { minHeight: 100, textAlignVertical: 'top' }, saveButton: { minHeight: 60 }, pressed: { opacity: 0.65 },
+  preview: { width: '100%', height: 210, borderRadius: radius.large }, scanStatus: { flexDirection: 'row', alignItems: 'center', gap: spacing.small }, memo: { minHeight: 100, textAlignVertical: 'top' }, saveButton: { minHeight: 60 }, pressed: { opacity: 0.65 },
 });

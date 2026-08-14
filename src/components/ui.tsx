@@ -243,7 +243,9 @@ export function TopBar({ title, backLabel, action }: { title: string; backLabel?
 
 function directionParticle(value: string) {
   const last = value.charCodeAt(value.length - 1);
-  return last >= 0xac00 && last <= 0xd7a3 && (last - 0xac00) % 28 !== 0 ? '으로' : '로';
+  if (last < 0xac00 || last > 0xd7a3) return '로';
+  const finalConsonant = (last - 0xac00) % 28;
+  return finalConsonant !== 0 && finalConsonant !== 8 ? '으로' : '로';
 }
 
 export function SectionTitle({ title, action }: { title: string; action?: ReactNode }) {
@@ -262,7 +264,7 @@ export function EmptyState({ title, body, action, icon = 'leaf' }: { title: stri
 }
 
 const navItems: { label: string; path: '/(tabs)' | '/(tabs)/journal' | '/(tabs)/add' | '/(tabs)/collection' | '/(tabs)/profile'; icon: SymbolName; match: string[] }[] = [
-  { label: '홈', path: '/(tabs)', icon: 'house.fill', match: ['/(tabs)', '/', '/recipe/guided'] },
+  { label: '홈', path: '/(tabs)', icon: 'house.fill', match: ['/(tabs)', '/', '/recipe/guided', '/notifications'] },
   { label: '기록', path: '/(tabs)/journal', icon: 'book.closed.fill', match: ['/journal', '/cup', '/compare'] },
   { label: '추가', path: '/(tabs)/add', icon: 'plus', match: ['/add'] },
   { label: '보관함', path: '/(tabs)/collection', icon: 'archivebox.fill', match: ['/collection', '/bean', '/recipe/manual', '/gear'] },

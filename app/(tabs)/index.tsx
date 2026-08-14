@@ -33,7 +33,7 @@ export default function HomeScreen() {
     <Screen showNavigation contentContainerStyle={styles.screen}>
       <View style={styles.brandRow}>
         <View style={styles.wordmark}><BrandMark size={26} /><Text variant="label" style={styles.wordmarkText}>BEANFOLD</Text></View>
-        <IconButton name="bell" label="알림" onPress={() => router.push('/settings')} />
+        <IconButton name="bell" label="알림" onPress={() => router.push('/notifications' as never)} />
       </View>
 
       <View style={styles.greeting}>

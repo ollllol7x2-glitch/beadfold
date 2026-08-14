@@ -38,3 +38,5 @@ Product requirements live in [BEANFOLD_MASTER_SPEC_V1.md](./BEANFOLD_MASTER_SPEC
 ## Privacy
 
 Beans, recipes, brew sessions, Cups, taste values, and private analytics events stay in the on-device `beanfold.db`. There are no bundled service credentials, ad SDKs, remote analytics, or required cloud calls. The optional sync boundary is defined in `src/services/sync.ts`.
+
+When the optional Google Cloud OCR endpoint is configured, a user-selected package image is sent only for text recognition. It is not stored by BEANFOLD or the Cloud Run service, and the user confirms any extracted field before saving. Setup and operational safeguards are documented in [ENVIRONMENT.md](./ENVIRONMENT.md).

@@ -29,4 +29,23 @@ The repository contains `Gemfile.cocoapods` to pin a compatible CocoaPods toolch
 
 ## Optional external services
 
-Supabase is intentionally not configured. A future adapter must receive URL/keys through runtime configuration, enable RLS, and preserve local IDs and `brew_session_id` idempotency. OCR is currently a permission-aware image capture/gallery flow with verified manual fallback; adding an on-device OCR engine requires a separately selected native dependency, not a secret.
+Supabase is intentionally not configured. A future adapter must receive URL/keys through runtime configuration, enable RLS, and preserve local IDs and `brew_session_id` idempotency.
+
+### Bean-label OCR on Google Cloud
+
+The optional `cloud/bean-label-ocr` service sends a package image directly to Google Cloud Vision Document Text Detection, returns extracted text and conservative field candidates, and does not persist package images. The app merges those candidates with its local coffee knowledge database, then leaves every value editable before save.
+
+The service uses its Cloud Run service identity. Do not put a Google service-account key or Vision API key in the Expo app, GitHub repository, or GitHub Pages bundle.
+
+Provision the service in the approved project only after the deploying account has project access:
+
+```bash
+gcloud services enable vision.googleapis.com run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com --project project-06f5d202-83b2-491b-b94
+gcloud iam service-accounts create beanfold-ocr --project project-06f5d202-83b2-491b-b94
+gcloud projects add-iam-policy-binding project-06f5d202-83b2-491b-b94 --member serviceAccount:beanfold-ocr@project-06f5d202-83b2-491b-b94.iam.gserviceaccount.com --role roles/vision.user
+gcloud run deploy beanfold-bean-label-ocr --source cloud/bean-label-ocr --project project-06f5d202-83b2-491b-b94 --region asia-northeast3 --service-account beanfold-ocr@project-06f5d202-83b2-491b-b94.iam.gserviceaccount.com --allow-unauthenticated --max-instances 1 --concurrency 1 --memory 512Mi --timeout 30 --set-env-vars ALLOWED_ORIGINS=https://ollllol7x2-glitch.github.io,MAX_REQUESTS_PER_HOUR=30
+```
+
+After deployment, add the Cloud Run URL as the GitHub repository Actions variable `BEANFOLD_OCR_URL`. The Pages workflow injects it at web-build time as `EXPO_PUBLIC_BEANFOLD_OCR_URL`. Without this variable, photo capture remains available and the app plainly falls back to manual input.
+
+The public static web app cannot provide strong caller authentication to Cloud Run. The service therefore constrains input size, origin, requests per process, concurrency, and instance count. Before broad public release, add a shared rate-limit or app-attestation layer and configure a Cloud Billing budget plus Vision API quota alerts.

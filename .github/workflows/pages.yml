@@ -17,6 +17,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      EXPO_PUBLIC_BEANFOLD_OCR_URL: ${{ vars.BEANFOLD_OCR_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
