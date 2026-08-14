@@ -82,6 +82,7 @@ const webIconNames: Record<string, WebIconName> = {
   timer: 'timer-outline',
   'wand.and.stars': 'magic-staff',
   'waterbottle.fill': 'bottle-soda-classic',
+  xmark: 'close',
 };
 
 export function Text({ variant = 'body', color = colors.charcoal, style, ...props }: TextProps & { variant?: TextVariant; color?: string }) {

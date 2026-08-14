@@ -23,4 +23,11 @@ describe('taste profile', () => {
   it('keeps unrated detailed taste values empty', () => {
     expect(emptyTasteValues()).toEqual({ acidity: null, sweetness: null, body: null, bitterness: null, aroma: null, aftertaste: null, balance: null });
   });
+
+  it('does not treat an unknown roast as a preference', () => {
+    const unknown = cup('unknown', 'loved', 'Floral');
+    unknown.beanSnapshot = { ...unknown.beanSnapshot!, roastLevel: 'unknown' };
+    const profile = calculateTasteProfile([unknown, cup('2', 'good', 'Clean'), cup('3', 'good', 'Sweet')]);
+    expect(profile.topRoasts.some((item) => item.label === 'unknown')).toBe(false);
+  });
 });

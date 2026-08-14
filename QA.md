@@ -1,6 +1,6 @@
 # QA
 
-Verification date: 2026-08-13. Primary native device: iPhone 17 Pro simulator, iOS 26.5. Mobile web was additionally verified from the production export at 390×844 and 375×667.
+Verification date: 2026-08-14. Primary native device: iPhone 17 Pro simulator, iOS 26.5. Mobile web was additionally verified at 390×844 and 375×667.
 
 ## Automated results
 
@@ -8,13 +8,31 @@ Verification date: 2026-08-13. Primary native device: iPhone 17 Pro simulator, i
 |---|---|
 | TypeScript `tsc --noEmit` | Pass |
 | ESLint | Pass |
-| Vitest | Pass: 4 files, 13 tests |
+| Vitest | Pass: 4 files, 15 tests |
 | Expo web SPA export | Pass with `/beadfold` base URL |
 | iOS Expo/Hermes export | Pass |
 | CocoaPods install | Pass |
 | Signed Xcode Debug simulator build | Pass |
 
-Tests cover recipe determinism, history/gear explanation and water/time invariants; timestamp projection; pause/resume; skip; Taste threshold/aggregation; nullable advanced values; and core color contrast.
+Tests cover recipe determinism, history/gear explanation and water/time invariants; honest unknown-roast fallback; timestamp projection; pause/resume; skip; Taste threshold/aggregation; exclusion of unknown roast from Taste Profile; nullable advanced values; and core color contrast.
+
+## CRUD task-based UX verification
+
+The 2026-08-14 pass used fresh browser SQLite data and cleaned all test records afterward.
+
+| Task | Result |
+|---|---|
+| Quick-add Bean with only name and weight | Pass; no invented roast, storage, state, or weight default |
+| Read Bean detail with missing optional metadata | Pass; missing values are named honestly and no empty detail card is shown |
+| Generate Guided Recipe from unknown roast | Pass; neutral 92℃ / medium grind fallback with a plain-language explanation |
+| Create Cafe Cup | Pass; inline required-field errors, explicit satisfaction, success feedback, and immediate undo |
+| Undo Cafe save | Pass; record deleted and Journal refreshed immediately |
+| Update then delete Cafe Cup | Pass; complete field prefill, visible confirmation, and post-action feedback |
+| Add, rename, make-primary, and remove custom Gear | Pass; removal states that historical Cups are preserved |
+| Archive and restore Bean | Pass; the exact pre-archive state is restored, including unspecified state |
+| Permanently delete Bean | Pass; destructive copy distinguishes it from reversible archive |
+
+Heuristic gate: 9.2/10 overall. Reading 9.2, writing 9.1, updating 9.2, deleting/recovery 9.1. The score reflects clear task entry points, honest defaults, inline prevention/recovery, complete CRUD control, localized labels, and verified mobile behavior. Physical VoiceOver/TalkBack and hardware camera/notification checks remain release certification items rather than CRUD usability blockers.
 
 ## Mobile web evidence
 

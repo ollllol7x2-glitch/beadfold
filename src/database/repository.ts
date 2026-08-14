@@ -134,6 +134,28 @@ export async function setPrimaryGear(db: SQLiteDatabase, id: string, category: G
   });
 }
 
+export async function renameUserGear(db: SQLiteDatabase, id: string, name: string) {
+  const normalized = name.trim();
+  if (!normalized) throw new Error('장비 이름을 입력해주세요.');
+  await db.runAsync('UPDATE user_equipment SET name=? WHERE id=? AND is_custom=1', normalized, id);
+}
+
+export async function deleteUserGear(db: SQLiteDatabase, id: string) {
+  await db.withTransactionAsync(async () => {
+    const target = await db.getFirstAsync<{ category: Gear['category']; is_primary: number }>(
+      'SELECT category, is_primary FROM user_equipment WHERE id=?', id,
+    );
+    if (!target) return;
+    await db.runAsync('DELETE FROM user_equipment WHERE id=?', id);
+    if (Number(target.is_primary) === 1) {
+      const next = await db.getFirstAsync<{ id: string }>(
+        'SELECT id FROM user_equipment WHERE category=? ORDER BY created_at, name LIMIT 1', target.category,
+      );
+      if (next) await db.runAsync('UPDATE user_equipment SET is_primary=1 WHERE id=?', next.id);
+    }
+  });
+}
+
 export async function listBeans(db: SQLiteDatabase, includeArchived = false): Promise<BeanLot[]> {
   const rows = await db.getAllAsync<Row>(
     `SELECT * FROM beans WHERE (? = 1 OR state != 'archived') ORDER BY updated_at DESC`, includeArchived ? 1 : 0,
@@ -179,11 +201,20 @@ export async function updateBean(db: SQLiteDatabase, bean: BeanLot): Promise<voi
 }
 
 export async function archiveBean(db: SQLiteDatabase, id: string) {
-  await db.runAsync(`UPDATE beans SET state='archived', updated_at=? WHERE id=?`, new Date().toISOString(), id);
+  await db.runAsync(
+    `UPDATE beans
+     SET archived_from_state=CASE WHEN state='archived' THEN archived_from_state ELSE state END,
+         state='archived', updated_at=?
+     WHERE id=?`,
+    new Date().toISOString(), id,
+  );
 }
 
 export async function restoreBean(db: SQLiteDatabase, id: string) {
-  await db.runAsync(`UPDATE beans SET state='opened', updated_at=? WHERE id=?`, new Date().toISOString(), id);
+  await db.runAsync(
+    `UPDATE beans SET state=COALESCE(archived_from_state, 'unspecified'), archived_from_state=NULL, updated_at=? WHERE id=?`,
+    new Date().toISOString(), id,
+  );
 }
 
 export async function deleteBean(db: SQLiteDatabase, id: string) {
@@ -295,7 +326,7 @@ export async function completeBrew(db: SQLiteDatabase, sessionId: string, comple
     if (!beanRow) throw new Error('원두를 찾을 수 없어요.');
     const currentBean = beanFromRow(beanRow);
     const nextWeight = Math.max(0, Number((currentBean.remainingWeightG - session.recipeSnapshot.doseG).toFixed(1)));
-    const nextState = nextWeight === 0 ? 'finished' : currentBean.state;
+    const nextState = nextWeight === 0 ? 'finished' : currentBean.state === 'unspecified' ? 'opened' : currentBean.state;
     const nowIso = new Date(completedAt).toISOString();
     const cup: Cup = {
       id: createId('cup'), brewSessionId: sessionId, beanId: session.beanId, kind: 'home',
@@ -335,6 +366,24 @@ export async function recordCupFeedback(
     new Date().toISOString(), cupId,
   );
   await trackEvent(db, 'feedback_submitted', { cup_id: cupId, satisfaction: feedback.satisfaction });
+}
+
+export async function updateCafeCup(
+  db: SQLiteDatabase,
+  cupId: string,
+  input: Pick<Cup, 'beanName' | 'cafeName' | 'drinkName' | 'satisfaction' | 'flavorTags' | 'memo' | 'imageUri'>,
+) {
+  await db.runAsync(
+    `UPDATE cups
+     SET bean_name=?, cafe_name=?, drink_name=?, satisfaction=?, flavor_tags_json=?, memo=?, image_uri=?, updated_at=?
+     WHERE id=? AND kind='cafe'`,
+    input.beanName, input.cafeName, input.drinkName, input.satisfaction,
+    JSON.stringify(input.flavorTags), input.memo, input.imageUri, new Date().toISOString(), cupId,
+  );
+}
+
+export async function deleteCup(db: SQLiteDatabase, cupId: string) {
+  await db.runAsync('DELETE FROM cups WHERE id=?', cupId);
 }
 
 export async function createCafeCup(

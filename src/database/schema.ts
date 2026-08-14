@@ -137,6 +137,7 @@ export async function migrateDatabase(db: SQLiteDatabase) {
       remaining_weight_g REAL NOT NULL,
       storage_type TEXT NOT NULL DEFAULT 'bag',
       state TEXT NOT NULL DEFAULT 'opened',
+      archived_from_state TEXT,
       tasting_notes_json TEXT NOT NULL DEFAULT '[]',
       description TEXT NOT NULL DEFAULT '',
       image_uri TEXT,
@@ -203,6 +204,11 @@ export async function migrateDatabase(db: SQLiteDatabase) {
   const cupColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(cups)');
   if (!cupColumns.some((column) => column.name === 'image_uri')) {
     await db.execAsync('ALTER TABLE cups ADD COLUMN image_uri TEXT;');
+  }
+
+  const beanColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(beans)');
+  if (!beanColumns.some((column) => column.name === 'archived_from_state')) {
+    await db.execAsync('ALTER TABLE beans ADD COLUMN archived_from_state TEXT;');
   }
 
   const legacyTaste = JSON.stringify({ acidity: 3, sweetness: 3, body: 3, bitterness: 3, aroma: 3, aftertaste: 3, balance: 3 });

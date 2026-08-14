@@ -23,6 +23,7 @@
 - [x] Cup photo, nullable advanced taste values, Korean flavor display, honest Compare, and recent Taste trend
 - [x] Collection sections for Beans/Recipes/Gear/Cafes, primary Gear, Bean restore, and permanent delete
 - [x] Mobile web SPA export, dynamic-route fallback, one-tab SQLite recovery, and GitHub Pages workflow
+- [x] CRUD trust pass: honest Bean defaults, full Cafe/Cup/Gear update-delete controls, reversible state-preserving archive, completion feedback, and immediate Cafe-save undo
 
 ## Release certification — external environment/human checks
 

@@ -44,7 +44,7 @@ export default function GuidedRecipeScreen() {
   if (error) return <Screen><EmptyState title="추천을 만들 수 없어요" body={error} action={<Button label="직접 레시피 만들기" onPress={() => router.replace(`/recipe/manual?beanId=${beanId}`)} />} /></Screen>;
   if (!bean || !recipe) return <Screen><View style={styles.loading}><Icon name="cup.and.saucer.fill" size={42} color={colors.taupe} /><Text variant="title3">오늘의 레시피를 준비하고 있어요</Text></View></Screen>;
 
-  const headline = bean.roastLevel === 'dark' ? '부드럽고 편안하게 내려볼게요.' : bean.process.toLowerCase().includes('natural') ? '달콤하고 풍성하게 내려볼게요.' : '밝고 향긋하게 내려볼게요.';
+  const headline = bean.roastLevel === 'unknown' ? '균형 잡힌 시작점으로 내려볼게요.' : bean.roastLevel === 'dark' ? '부드럽고 편안하게 내려볼게요.' : bean.process.toLowerCase().includes('natural') ? '달콤하고 풍성하게 내려볼게요.' : '밝고 향긋하게 내려볼게요.';
   const gearNames = ['grinder', 'dripper'].map((category) => gear.find((item) => item.category === category)?.name).filter(Boolean);
 
   return (

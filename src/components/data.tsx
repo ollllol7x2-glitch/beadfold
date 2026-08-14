@@ -1,6 +1,6 @@
 import { Image, StyleSheet, View } from 'react-native';
 import type { BeanLot, Cup, Recipe } from '@/domain/types';
-import { satisfactionLabel } from '@/domain/types';
+import { beanStateLabel, localizedFlavor, roastLevelLabel, satisfactionLabel } from '@/domain/types';
 import { colors, radius, spacing } from '@/design-system/tokens';
 import { Card, Icon, Text } from './ui';
 
@@ -8,14 +8,15 @@ const fallbackImage = require('../../assets/visuals/bean-still-life.png');
 
 export function BeanSummary({ bean }: { bean: BeanLot }) {
   const remainingRatio = Math.max(0, Math.min(1, bean.initialWeightG ? bean.remainingWeightG / bean.initialWeightG : 0));
+  const detail = [bean.process, bean.roastLevel === 'unknown' ? '' : roastLevelLabel[bean.roastLevel]].filter(Boolean).join(' · ');
   return (
-    <Card accessibilityLabel={`${bean.name}. ${bean.country} ${bean.region}. ${bean.process}. 남은 원두 ${bean.remainingWeightG}그램.`} style={styles.beanCard}>
+    <Card accessibilityLabel={`${bean.name}. ${[bean.country, bean.region, detail].filter(Boolean).join(', ')}. 남은 원두 ${bean.remainingWeightG}그램. ${beanStateLabel[bean.state]}.`} style={styles.beanCard}>
       <View style={styles.beanRow}>
         <Image source={bean.imageUri ? { uri: bean.imageUri } : fallbackImage} resizeMode="cover" style={styles.beanImage} accessible={false} />
         <View style={styles.flex}>
-          <View style={styles.row}><Text variant="title3" style={styles.flex} numberOfLines={2}>{bean.name}</Text><Icon name="chevron.right" size={16} color={colors.neutral400} /></View>
+          <View style={styles.row}><Text variant="title3" style={styles.flex}>{bean.name}</Text><Icon name="chevron.right" size={16} color={colors.neutral400} /></View>
           <Text variant="caption" color={colors.neutral600}>{[bean.country, bean.region].filter(Boolean).join(' · ') || bean.roaster || '직접 등록한 원두'}</Text>
-          <Text variant="label">{[bean.process, bean.roastLevel].filter(Boolean).join(' · ')}</Text>
+          {detail ? <Text variant="label">{detail}</Text> : <Text variant="caption" color={colors.neutral800}>가공·로스팅 정보 미입력</Text>}
           <View style={styles.weightRow}><View style={styles.weightTrack}><View style={[styles.weightFill, { width: `${remainingRatio * 100}%` }]} /></View><Text variant="caption" color={colors.neutral800}>{bean.remainingWeightG}g</Text></View>
         </View>
       </View>
@@ -38,10 +39,10 @@ export function CupSummary({ cup }: { cup: Cup }) {
     <Card accessibilityLabel={`${cup.beanName}. ${cup.kind === 'home' ? '홈 브루' : '카페'}. ${cup.satisfaction ? satisfactionLabel[cup.satisfaction] : '평가 대기 중'}.`} style={styles.cupCard}>
       <Image source={cup.imageUri ? { uri: cup.imageUri } : fallbackImage} resizeMode="cover" style={styles.cupImage} accessible={false} />
       <View style={styles.flex}>
-        <View style={styles.row}><Text variant="title3" style={styles.flex} numberOfLines={1}>{cup.beanName}</Text><Icon name={cup.satisfaction === 'loved' ? 'heart.fill' : cup.satisfaction === 'good' ? 'face.smiling' : 'circle'} size={20} color={cup.satisfaction === 'loved' ? colors.terracotta : colors.espresso} /></View>
+        <View style={styles.row}><Text variant="title3" style={styles.flex}>{cup.beanName}</Text><Icon name={cup.satisfaction === 'loved' ? 'heart.fill' : cup.satisfaction === 'good' ? 'face.smiling' : 'circle'} size={20} color={cup.satisfaction === 'loved' ? colors.terracotta : colors.espresso} /></View>
         <Text variant="caption" color={colors.neutral600}>{new Date(cup.createdAt).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} · {cup.kind === 'home' ? '홈 브루' : cup.cafeName || '카페'}</Text>
         {cup.recipeSnapshot ? <Text variant="caption">{cup.recipeSnapshot.doseG}g · {cup.recipeSnapshot.waterMl}ml · {cup.recipeSnapshot.temperatureC}℃</Text> : null}
-        {cup.flavorTags.length ? <Text variant="caption" color={colors.cocoa}>{cup.flavorTags.slice(0, 3).join(' · ')}</Text> : null}
+        {cup.flavorTags.length ? <Text variant="caption" color={colors.cocoa}>{cup.flavorTags.slice(0, 3).map(localizedFlavor).join(' · ')}</Text> : null}
       </View>
     </Card>
   );

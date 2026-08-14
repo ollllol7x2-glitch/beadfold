@@ -25,7 +25,7 @@ export function calculateTasteProfile(cups: Cup[]): TasteProfile {
   const topFlavors = aggregate(rated, (cup) => cup.flavorTags);
   const topOrigins = aggregate(rated, (cup) => cup.beanSnapshot?.country ? [cup.beanSnapshot.country] : []);
   const topProcesses = aggregate(rated, (cup) => cup.beanSnapshot?.process ? [cup.beanSnapshot.process] : []);
-  const topRoasts = aggregate(rated, (cup) => cup.beanSnapshot?.roastLevel ? [cup.beanSnapshot.roastLevel] : []);
+  const topRoasts = aggregate(rated, (cup) => cup.beanSnapshot?.roastLevel && cup.beanSnapshot.roastLevel !== 'unknown' ? [cup.beanSnapshot.roastLevel] : []);
   let insight = '커피를 마시고 첫 느낌을 남겨보세요.';
   let recentTrend = '기록이 쌓이면 최근 취향 변화를 보여드려요.';
   if (rated.length >= 3 && topFlavors[0]) {

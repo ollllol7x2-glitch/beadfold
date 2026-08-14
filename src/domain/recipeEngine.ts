@@ -25,6 +25,7 @@ function ageInDays(roastDate: string | null, now: Date): number | null {
 
 function roastSettings(roast: RoastLevel) {
   const settings: Record<RoastLevel, { temperature: number; ratio: number; grind: string }> = {
+    unknown: { temperature: 92, ratio: 16, grind: '중간 굵기' },
     light: { temperature: 93, ratio: 16.5, grind: '중간보다 조금 곱게' },
     'medium-light': { temperature: 92, ratio: 16, grind: '중간보다 조금 곱게' },
     medium: { temperature: 90, ratio: 15.5, grind: '중간 굵기' },
@@ -36,6 +37,7 @@ function roastSettings(roast: RoastLevel) {
 
 function roastLabel(roast: RoastLevel) {
   const labels: Record<RoastLevel, string> = {
+    unknown: '로스팅 정도를 입력하지 않은',
     light: '약하게 볶은',
     'medium-light': '중간보다 약하게 볶은',
     medium: '중간 정도로 볶은',
@@ -108,7 +110,9 @@ export function generateGuidedRecipe(input: GuidedRecipeInput): Recipe {
   const doseG = clamp(input.doseG ?? 15, 10, 30);
   const settings = roastSettings(bean.roastLevel);
   const explanations = [
-    `${roastLabel(bean.roastLevel)} 원두라 ${settings.temperature}℃에서 시작해요.`,
+    bean.roastLevel === 'unknown'
+      ? `로스팅 정도가 비어 있어 균형 잡힌 ${settings.temperature}℃에서 시작해요.`
+      : `${roastLabel(bean.roastLevel)} 원두라 ${settings.temperature}℃에서 시작해요.`,
   ];
   let ratio = settings.ratio;
   let temperatureC = settings.temperature;

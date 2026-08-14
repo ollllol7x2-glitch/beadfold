@@ -8,10 +8,12 @@ import type { BeanLot, Recipe } from '@/domain/types';
 import { deleteRecipe, duplicateRecipe, getBean, getRecipe, listBeans, saveRecipe, startBrew } from '@/database/repository';
 import { colors, spacing } from '@/design-system/tokens';
 import { ConfirmDialog } from '@/components/confirmDialog';
+import { useFeedback } from '@/components/feedback';
 
 export default function ManualRecipeScreen() {
   const { beanId, recipeId } = useLocalSearchParams<{ beanId?: string; recipeId?: string }>();
   const db = useSQLiteContext();
+  const { showFeedback } = useFeedback();
   const [bean, setBean] = useState<BeanLot | null>(null);
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
@@ -73,7 +75,7 @@ export default function ManualRecipeScreen() {
 
   const save = async () => { if (!recipe) return; if (validation.length) return setErrors(validation); await saveRecipe(db, recipe); setErrors([]); setSaved(true); };
   const brew = async () => { if (!recipe || !bean) return; if (validation.length) return setErrors(validation); await saveRecipe(db, recipe); const session = await startBrew(db, bean, recipe); router.replace(`/brew/${session.id}`); };
-  const remove = async () => { if (!recipe) return; await deleteRecipe(db, recipe.id); setConfirmDelete(false); router.back(); };
+  const remove = async () => { if (!recipe) return; await deleteRecipe(db, recipe.id); setConfirmDelete(false); showFeedback('레시피를 삭제했어요.'); router.back(); };
 
   if (!bean || !recipe) return <Screen><Text>직접 레시피를 만들려면 먼저 원두를 골라주세요.</Text><Button label="원두 추가" onPress={() => router.replace('/add-bean')} /></Screen>;
 
@@ -95,7 +97,7 @@ export default function ManualRecipeScreen() {
       <Card><Text variant="title3">붓는 순서 직접 편집</Text><Text color={colors.neutral800}>위의 목표값을 바꾸면 각 단계를 자동으로 맞춰요. 아래에서 시간과 물양을 바꾸면 총 시간과 전체 물양도 함께 바뀝니다.</Text>{recipe.steps.map((step, index) => <View key={step.id} style={styles.step}><Text variant="label">{step.order + 1}. {step.name} · 누적 {step.waterTotalMl}ml</Text><View style={styles.grid}><View style={styles.flex}><Field label="시간 (초)" value={String(step.durationSec)} onChangeText={(value) => updateStep(index, 'durationSec', value)} keyboardType="number-pad" /></View><View style={styles.flex}><Field label="물양 (ml)" value={String(step.waterDeltaMl)} onChangeText={(value) => updateStep(index, 'waterDeltaMl', value)} keyboardType="number-pad" /></View></View></View>)}</Card>
       <Button label="저장" variant="secondary" onPress={() => void save()} />
       <Button label="이 레시피로 브루잉" onPress={() => void brew()} />
-      {recipeId ? <Button label="복제" variant="secondary" onPress={async () => { const copy = await duplicateRecipe(db, recipe); router.replace(`/recipe/manual?recipeId=${copy.id}`); }} /> : null}
+      {recipeId ? <Button label="복제" variant="secondary" onPress={async () => { const copy = await duplicateRecipe(db, recipe); showFeedback('레시피 복사본을 만들었어요.'); router.replace(`/recipe/manual?recipeId=${copy.id}`); }} /> : null}
       {recipeId ? <Button label="삭제" variant="danger" onPress={() => setConfirmDelete(true)} /> : null}
       <ConfirmDialog visible={confirmDelete} title="레시피를 삭제할까요?" body="이미 기록한 커피는 그대로 남아요." confirmLabel="삭제" destructive onCancel={() => setConfirmDelete(false)} onConfirm={() => void remove()} />
     </Screen>

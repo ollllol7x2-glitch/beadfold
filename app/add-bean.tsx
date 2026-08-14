@@ -7,12 +7,15 @@ import { Button, Card, Chip, Field, Icon, PageHeader, Screen, Text } from '@/com
 import { createBean, getBean, matchKnowledgeFromLabel, trackEvent, updateBean } from '@/database/repository';
 import type { BeanLot, BeanState, RoastLevel } from '@/domain/types';
 import { colors, radius, spacing } from '@/design-system/tokens';
+import { useFeedback } from '@/components/feedback';
 
 const roastLevels: { value: RoastLevel; label: string }[] = [
+  { value: 'unknown', label: '모름' },
   { value: 'light', label: '약배전' }, { value: 'medium-light', label: '중약배전' },
   { value: 'medium', label: '중배전' }, { value: 'medium-dark', label: '중강배전' }, { value: 'dark', label: '강배전' },
 ];
 const beanStates: { value: BeanState; label: string }[] = [
+  { value: 'unspecified', label: '나중에 입력' },
   { value: 'unopened', label: '미개봉' }, { value: 'opened', label: '개봉' },
   { value: 'frozen', label: '냉동' }, { value: 'finished', label: '다 마심' },
 ];
@@ -20,9 +23,10 @@ const beanStates: { value: BeanState; label: string }[] = [
 export default function AddBeanScreen() {
   const { editId } = useLocalSearchParams<{ editId?: string }>();
   const db = useSQLiteContext();
+  const { showFeedback } = useFeedback();
   const [name, setName] = useState('');
-  const [weight, setWeight] = useState('200');
-  const [initialWeight, setInitialWeight] = useState(200);
+  const [weight, setWeight] = useState('');
+  const [initialWeight, setInitialWeight] = useState(0);
   const [detailsOpen, setDetailsOpen] = useState(Boolean(editId));
   const [searchOpen, setSearchOpen] = useState(false);
   const [labelText, setLabelText] = useState('');
@@ -32,9 +36,9 @@ export default function AddBeanScreen() {
   const [variety, setVariety] = useState('');
   const [process, setProcess] = useState('');
   const [roastDate, setRoastDate] = useState('');
-  const [roastLevel, setRoastLevel] = useState<RoastLevel>('light');
-  const [storageType, setStorageType] = useState('bag');
-  const [beanState, setBeanState] = useState<BeanState>('opened');
+  const [roastLevel, setRoastLevel] = useState<RoastLevel>('unknown');
+  const [storageType, setStorageType] = useState('');
+  const [beanState, setBeanState] = useState<BeanState>('unspecified');
   const [notes, setNotes] = useState('');
   const [description, setDescription] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
@@ -105,7 +109,10 @@ export default function AddBeanScreen() {
       };
       const bean = existing ? { ...existing, ...draft } : await createBean(db, draft);
       if (existing) await updateBean(db, bean);
-      if (existing) router.replace(`/bean/${bean.id}`); else setSaved(bean);
+      if (existing) {
+        showFeedback('원두 정보를 수정했어요.');
+        router.replace(`/bean/${bean.id}`);
+      } else setSaved(bean);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '원두를 저장하지 못했어요.');
     } finally { setSaving(false); }
@@ -141,8 +148,8 @@ export default function AddBeanScreen() {
 
     <Card style={styles.quickCard}>
       <View><Text variant="title2">빠른 추가</Text><Text color={colors.neutral800}>두 가지만 입력하면 저장할 수 있어요.</Text></View>
-      <Field label="원두 이름" value={name} onChangeText={setName} placeholder="예: 과테말라 엘 인헤르토" />
-      <Field label="남은 양 (g)" value={weight} onChangeText={setWeight} keyboardType="decimal-pad" />
+      <Field label="원두 이름" value={name} onChangeText={(value) => { setName(value); setError(''); }} placeholder="예: 과테말라 엘 인헤르토" />
+      <Field label="남은 양 (g)" value={weight} onChangeText={(value) => { setWeight(value); setError(''); }} keyboardType="decimal-pad" placeholder="예: 200" hint="봉투에 남은 양을 대략 적어도 괜찮아요." />
     </Card>
 
     <Pressable accessibilityRole="button" accessibilityLabel={`원두 정보 더 입력하기, 현재 ${detailsOpen ? '펼쳐짐' : '접힘'}`} onPress={() => setDetailsOpen((current) => !current)} style={styles.disclosure}>
@@ -153,8 +160,10 @@ export default function AddBeanScreen() {
     {detailsOpen ? <View style={styles.details}>
       {!imageUri ? <Button label="봉투 사진 추가" variant="secondary" icon="camera.fill" onPress={() => void pickImage(false)} /> : null}
       <Field label="로스터" value={roaster} onChangeText={setRoaster} placeholder="선택 사항" />
-      <View style={styles.two}><View style={styles.flex}><Field label="국가" value={country} onChangeText={setCountry} /></View><View style={styles.flex}><Field label="산지" value={region} onChangeText={setRegion} /></View></View>
-      <View style={styles.two}><View style={styles.flex}><Field label="품종" value={variety} onChangeText={setVariety} /></View><View style={styles.flex}><Field label="가공 방식" value={process} onChangeText={setProcess} /></View></View>
+      <Field label="국가" value={country} onChangeText={setCountry} />
+      <Field label="산지" value={region} onChangeText={setRegion} />
+      <Field label="품종" value={variety} onChangeText={setVariety} />
+      <Field label="가공 방식" value={process} onChangeText={setProcess} />
       <Field label="로스팅 날짜" value={roastDate} onChangeText={setRoastDate} placeholder="YYYY-MM-DD" hint="정확히 모르면 비워두세요." />
       <Text variant="label">로스팅 정도</Text><View style={styles.chips}>{roastLevels.map((level) => <Chip key={level.value} label={level.label} selected={roastLevel === level.value} onPress={() => setRoastLevel(level.value)} />)}</View>
       <Text variant="label">원두 상태</Text><View style={styles.chips}>{beanStates.map((state) => <Chip key={state.value} label={state.label} selected={beanState === state.value} onPress={() => setBeanState(state.value)} />)}</View>
@@ -179,6 +188,6 @@ const styles = StyleSheet.create({
   sources: { flexDirection: 'row', gap: spacing.compact }, source: { flex: 1, minHeight: 92, padding: spacing.small, gap: spacing.compact, borderRadius: radius.large, backgroundColor: colors.creamDeep },
   sourceIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
   quickCard: { gap: spacing.default }, disclosure: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: spacing.small, paddingVertical: spacing.compact }, disclosureCopy: { flex: 1, gap: 2 },
-  details: { gap: spacing.default }, chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.compact }, two: { flexDirection: 'row', gap: spacing.small }, flex: { flex: 1 },
+  details: { gap: spacing.default }, chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.compact }, flex: { flex: 1 },
   preview: { width: '100%', height: 210, borderRadius: radius.large }, memo: { minHeight: 100, textAlignVertical: 'top' }, saveButton: { minHeight: 60 }, pressed: { opacity: 0.65 },
 });

@@ -9,6 +9,7 @@ import { migrateDatabase } from '@/database/schema';
 import { colors } from '@/design-system/tokens';
 import { Text } from '@/components/ui';
 import { setupNotificationHandler } from '@/services/notificationHandler';
+import { FeedbackProvider } from '@/components/feedback';
 
 void SplashScreen.preventAutoHideAsync();
 setupNotificationHandler();
@@ -37,14 +38,16 @@ export default function RootLayout() {
 
   return (
     <SQLiteProvider databaseName="beanfold.db" onInit={migrateDatabase} onError={setDatabaseError}>
-      <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.cream }, animation: 'none' }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="add-bean" options={{ presentation: 'modal', animation: 'none' }} />
-        <Stack.Screen name="record-cafe" options={{ presentation: 'modal', animation: 'none' }} />
-        <Stack.Screen name="record-cup/[cupId]" options={{ presentation: 'modal', animation: 'none' }} />
-      </Stack>
+      <FeedbackProvider>
+        <StatusBar style="dark" />
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.cream }, animation: 'none' }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="add-bean" options={{ presentation: 'modal', animation: 'none' }} />
+          <Stack.Screen name="record-cafe" options={{ presentation: 'modal', animation: 'none' }} />
+          <Stack.Screen name="record-cup/[cupId]" options={{ presentation: 'modal', animation: 'none' }} />
+        </Stack>
+      </FeedbackProvider>
     </SQLiteProvider>
   );
 }

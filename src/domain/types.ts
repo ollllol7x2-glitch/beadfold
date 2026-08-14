@@ -1,5 +1,5 @@
-export type RoastLevel = 'light' | 'medium-light' | 'medium' | 'medium-dark' | 'dark';
-export type BeanState = 'unopened' | 'opened' | 'frozen' | 'finished' | 'archived';
+export type RoastLevel = 'unknown' | 'light' | 'medium-light' | 'medium' | 'medium-dark' | 'dark';
+export type BeanState = 'unspecified' | 'unopened' | 'opened' | 'frozen' | 'finished' | 'archived';
 export type RecipeType = 'base' | 'guided' | 'manual' | 'imported';
 export type BrewStatus = 'ready' | 'active' | 'paused' | 'completed' | 'abandoned';
 export type Satisfaction = 'not_for_me' | 'good' | 'loved';
@@ -147,6 +147,24 @@ export const satisfactionLabel: Record<Satisfaction, string> = {
   not_for_me: '아쉬웠어요',
   good: '괜찮았어요',
   loved: '좋았어요',
+};
+
+export const roastLevelLabel: Record<RoastLevel, string> = {
+  unknown: '로스팅 미입력',
+  light: '약배전',
+  'medium-light': '중약배전',
+  medium: '중배전',
+  'medium-dark': '중강배전',
+  dark: '강배전',
+};
+
+export const beanStateLabel: Record<BeanState, string> = {
+  unspecified: '상태 미입력',
+  unopened: '미개봉',
+  opened: '개봉',
+  frozen: '냉동',
+  finished: '다 마심',
+  archived: '보관됨',
 };
 
 export const flavorLabel: Record<string, string> = {

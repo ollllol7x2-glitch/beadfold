@@ -49,4 +49,12 @@ describe('guided recipe engine', () => {
     expect(recipe.explanation.some((reason) => reason.includes('최근 기록'))).toBe(true);
     expect(validateRecipe(recipe)).toEqual([]);
   });
+
+  it('uses an honest neutral starting point when roast level is unknown', () => {
+    const recipe = generateGuidedRecipe({ bean: { ...bean, roastLevel: 'unknown' }, now: new Date('2026-08-10T00:00:00.000Z') });
+    expect(recipe.temperatureC).toBe(92);
+    expect(recipe.grindTarget).toBe('중간 굵기');
+    expect(recipe.explanation[0]).toContain('로스팅 정도가 비어 있어');
+    expect(validateRecipe(recipe)).toEqual([]);
+  });
 });

@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { CupSummary } from '@/components/data';
 import { Button, EmptyState, Icon, Screen, Text } from '@/components/ui';
@@ -11,6 +11,7 @@ import { colors, radius, spacing } from '@/design-system/tokens';
 type KindFilter = 'all' | Cup['kind'];
 
 export default function JournalScreen() {
+  const { refresh } = useLocalSearchParams<{ refresh?: string }>();
   const db = useSQLiteContext();
   const [cups, setCups] = useState<Cup[]>([]);
   const [beans, setBeans] = useState<BeanLot[]>([]);
@@ -18,11 +19,12 @@ export default function JournalScreen() {
   const [beanId, setBeanId] = useState<string | null>(null);
 
   useFocusEffect(useCallback(() => {
+    void refresh;
     let active = true;
     void trackEvent(db, 'journal_viewed');
     Promise.all([listCups(db), listBeans(db, true)]).then(([nextCups, nextBeans]) => { if (active) { setCups(nextCups); setBeans(nextBeans); } });
     return () => { active = false; };
-  }, [db]));
+  }, [db, refresh]));
 
   const filtered = cups.filter((cup) => (kind === 'all' || cup.kind === kind) && (!beanId || cup.beanId === beanId));
   const grouped = useMemo(() => groupByDate(filtered), [filtered]);
