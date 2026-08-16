@@ -4,6 +4,11 @@ const expoConfig = require('eslint-config-expo/flat');
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ['dist/*', '.expo/*', 'BEANFOLD_CODEX_PACKAGE_V1 (1)/*'],
+    ignores: [
+      'dist/*',
+      '.expo/*',
+      'cloud/bean-label-ocr/**',
+      'BEANFOLD_CODEX_PACKAGE_V1 (1)/*',
+    ],
   },
 ]);
