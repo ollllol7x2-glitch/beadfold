@@ -63,6 +63,7 @@ import Sparkles from 'lucide-react-native/icons/sparkles';
 import Thermometer from 'lucide-react-native/icons/thermometer';
 import ThumbsDown from 'lucide-react-native/icons/thumbs-down';
 import Timer from 'lucide-react-native/icons/timer';
+import Vibrate from 'lucide-react-native/icons/vibrate';
 import Volume2 from 'lucide-react-native/icons/volume-2';
 import WandSparkles from 'lucide-react-native/icons/wand-sparkles';
 import X from 'lucide-react-native/icons/x';
@@ -105,6 +106,7 @@ const iconMap = {
   'gearshape.fill': Cog,
   'globe.asia.australia.fill': Globe,
   'hand.tap.fill': Hand,
+  'iphone.vibrate': Vibrate,
   'hand.thumbsdown.fill': ThumbsDown,
   'heart.fill': Heart,
   hourglass: Hourglass,
@@ -372,7 +374,7 @@ const navItems: { label: string; path: '/(tabs)' | '/(tabs)/journal' | '/(tabs)/
   { label: '홈', path: '/(tabs)', icon: 'house.fill', match: ['/(tabs)', '/', '/recipe/guided', '/notifications'] },
   { label: '기록', path: '/(tabs)/journal', icon: 'book.closed.fill', match: ['/journal', '/cup', '/compare'] },
   { label: '보관함', path: '/(tabs)/collection', icon: 'archivebox.fill', match: ['/collection', '/bean', '/recipe/manual', '/gear'] },
-  { label: '프로필', path: '/(tabs)/profile', icon: 'person.crop.circle', match: ['/profile', '/taste-profile', '/settings'] },
+  { label: '마이페이지', path: '/(tabs)/profile', icon: 'person.crop.circle', match: ['/profile', '/taste-profile', '/settings'] },
 ];
 
 export function AppNavigation() {

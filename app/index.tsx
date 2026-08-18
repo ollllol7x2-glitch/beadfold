@@ -77,7 +77,7 @@ export default function OnboardingScreen() {
           </View>
           <View style={styles.heading}>
             <Text variant="display" accessibilityRole="header">어떤 한 잔을{`\n`}원하세요?</Text>
-            <Text variant="bodyLarge" color={colors.neutral800}>고른 답은 언제든 프로필에서 바꿀 수 있어요.</Text>
+            <Text variant="bodyLarge" color={colors.neutral800}>고른 답은 언제든 마이페이지에서 바꿀 수 있어요.</Text>
           </View>
           <View style={styles.choices}>{goalOptions.map((option) => <Choice key={option.value} {...option} selected={goal === option.value} onPress={() => setGoal(option.value)} />)}</View>
         </>

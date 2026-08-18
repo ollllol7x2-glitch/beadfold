@@ -15,12 +15,12 @@ export default function SettingsScreen() {
   const update = async (key: string, value: boolean, setter: (value: boolean) => void) => { setter(value); await setSetting(db, key, String(value)); };
   const notifications = async () => { const granted = await requestTasteReminderPermission(); await setSetting(db, 'notification_reminders', String(granted)); setStatus(granted ? '브루잉이 끝난 뒤 맛 기록을 잊지 않도록 알려드릴게요.' : '알림을 켜지 않았어요. 필요할 때 다시 선택할 수 있어요.'); };
   const storageCopy = Platform.OS === 'web' ? '기록은 이 브라우저에 저장돼요. 브라우저 데이터를 지우면 함께 사라질 수 있어요.' : '기록은 이 휴대폰에 저장돼요. 앱을 지우면 함께 사라질 수 있어요.';
-  return <Screen header={<PageHeader title="설정" backLabel="프로필" backHref="/(tabs)/profile" />} contentContainerStyle={styles.screen}>
-    {Platform.OS !== 'web' ? <>
-      {status ? <Text accessibilityRole="alert" color={colors.neutral800}>{status}</Text> : null}
-      <View style={styles.group}><Setting icon="hand.tap.fill" label="단계 알림 진동" body="다음 단계가 되면 짧게 알려줘요" value={haptics} onChange={(value) => void update('haptics', value, setHaptics)} /><Setting icon="speaker.wave.2.fill" label="알림 소리" body="맛 기록 알림에 소리를 사용해요" value={sound} onChange={(value) => void update('sound', value, setSound)} /></View>
+  return <Screen header={<PageHeader title="설정" backLabel="마이페이지" backHref="/(tabs)/profile" />} contentContainerStyle={styles.screen}>
+    {status ? <Text accessibilityRole="alert" color={colors.neutral800}>{status}</Text> : null}
+    <View style={styles.group}><Setting icon="iphone.vibrate" label="단계 알림 진동" body="다음 단계가 되면 짧게 알려줘요" value={haptics} onChange={(value) => void update('haptics', value, setHaptics)} /><Setting icon="speaker.wave.2.fill" label="알림 소리" body="맛 기록 알림을 소리와 함께 받아요" value={sound} onChange={(value) => void update('sound', value, setSound)} /></View>
+    {Platform.OS !== 'web' ?
       <Card tone="tinted"><View style={styles.cardTitle}><Icon name="bell.badge.fill" size={23} /><Text variant="title3">맛 기록 알림</Text></View><Text color={colors.neutral800}>브루잉을 마친 뒤 맛이 선명할 때 한 번 알려드려요.</Text><Button label="알림 켜기" variant="secondary" onPress={() => void notifications()} /></Card>
-    </> : null}
+      : null}
     <Card><View style={styles.cardTitle}><Icon name="iphone" size={23} /><Text variant="title3">저장 위치</Text></View><Text color={colors.neutral800}>{storageCopy}</Text></Card>
     <Card><Text variant="title3">데이터와 백업</Text><Text color={colors.neutral800}>현재 기록은 이 기기에만 저장됩니다. 내보내기와 복원 기능은 준비 중이에요.</Text><Button label="백업 기능 준비 중" variant="secondary" disabled /></Card>
   </Screen>;
