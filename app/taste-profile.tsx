@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
 import { PageHeader, Screen, Text } from '@/components/ui';
 import { listCups, trackEvent } from '@/database/repository';
 import { calculateTasteProfile } from '@/domain/tasteProfile';
@@ -102,6 +102,7 @@ function TastePoster({ profile }: { profile: TasteProfile }) {
   const headline = profile.ratedCupCount > 0
     ? profile.insight.replace(' 커피를 ', '\n커피를 ')
     : '첫 한 잔부터\n취향을 그려보세요.';
+  const satisfactionOutOfFive = profile.averageScore == null ? '-' : ((profile.averageScore / 3) * 5).toFixed(1);
 
   return (
     <View style={styles.poster}>
@@ -149,8 +150,8 @@ function TastePoster({ profile }: { profile: TasteProfile }) {
         </View>
         <View style={styles.posterMetricDivider} />
         <View style={styles.posterMetric}>
-          <Text style={styles.posterMetricNumber} color={colors.white}>{profile.averageScore?.toFixed(1) ?? '-'}</Text>
-          <Text variant="caption" color="rgba(255,255,255,0.62)">SATISFACTION / 3</Text>
+          <Text style={styles.posterMetricNumber} color={colors.white}>{satisfactionOutOfFive}</Text>
+          <Text variant="caption" color="rgba(255,255,255,0.62)">SATISFACTION / 5</Text>
         </View>
       </View>
     </View>
@@ -160,6 +161,7 @@ function TastePoster({ profile }: { profile: TasteProfile }) {
 function TasteGlyph({ items, layerCount, summary }: { items: TasteAverage[]; layerCount: number; summary: string }) {
   const values = new Map(items.map((item) => [item.key, item]));
   const actualPoints = tasteGlyphPoints(values, 1);
+  const guidePoints = tasteGlyphGuidePoints();
   const accessibleLabel = items.length >= 3 ? `일곱 감각으로 만든 취향 지문. ${summary}` : '아직 완성되지 않은 취향 지문';
 
   if (!items.length) {
@@ -186,6 +188,8 @@ function TasteGlyph({ items, layerCount, summary }: { items: TasteAverage[]; lay
             <Stop offset="1" stopColor={colors.terracotta} stopOpacity="0.38" />
           </LinearGradient>
         </Defs>
+        <Path d={closedPath(guidePoints)} fill="none" stroke={colors.white} strokeOpacity={0.22} strokeWidth={1} />
+        {guidePoints.map((point, index) => <Line key={tasteAxisMeta[index]!.key} x1={glyphCenter} y1={glyphCenter} x2={point.x} y2={point.y} stroke={colors.white} strokeOpacity={0.18} strokeWidth={1} />)}
         {Array.from({ length: layerCount }, (_, index) => {
           const scale = 0.58 + index * (0.42 / Math.max(1, layerCount - 1));
           return <Path key={scale} d={smoothClosedPath(tasteGlyphPoints(values, scale))} fill={index === layerCount - 1 ? 'url(#glyph-fill)' : 'none'} stroke={colors.white} strokeOpacity={0.15 + index * 0.13} strokeWidth={1.15} />;
@@ -216,6 +220,14 @@ function tasteGlyphPoints(values: Map<keyof TasteValues, TasteAverage>, scale: n
   });
 }
 
+function tasteGlyphGuidePoints(): Point[] {
+  return tasteAxisMeta.map((_, index) => {
+    const angle = -Math.PI / 2 + index * Math.PI * 2 / tasteAxisMeta.length;
+    const pointRadius = 135;
+    return { x: glyphCenter + Math.cos(angle) * pointRadius, y: glyphCenter + Math.sin(angle) * pointRadius };
+  });
+}
+
 function glyphLabelPoint(index: number): Point {
   const angle = -Math.PI / 2 + index * Math.PI * 2 / tasteAxisMeta.length;
   const labelRadius = 150;
@@ -235,6 +247,11 @@ function smoothClosedPath(points: Point[]) {
     path += ` Q ${point.x} ${point.y} ${end.x} ${end.y}`;
   });
   return `${path} Z`;
+}
+
+function closedPath(points: Point[]) {
+  if (!points.length) return '';
+  return `${points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')} Z`;
 }
 
 function PreferenceAnnotations({ origins, processes, roasts, recentTrend }: { origins: TasteDimension[]; processes: TasteDimension[]; roasts: TasteDimension[]; recentTrend: string }) {
