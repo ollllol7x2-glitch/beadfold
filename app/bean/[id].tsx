@@ -4,14 +4,14 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { CupSummary, RecipeSummary } from '@/components/data';
 import { Button, Card, EmptyState, PageHeader, Screen, Text } from '@/components/ui';
-import { archiveBean, deleteBean, getBean, listCups, listRecipes } from '@/database/repository';
-import type { BeanLot, Cup, Recipe } from '@/domain/types';
-import { colors, spacing } from '@/design-system/tokens';
+import { archiveBean, deleteBean, getBean, listCatalogGear, listCups, listRecipes, listUserGear } from '@/database/repository';
+import { getInventoryStatus } from '@/domain/inventory';
+import { generateGuidedRecipe } from '@/domain/recipeEngine';
+import type { BeanLot, Cup, Gear, Recipe } from '@/domain/types';
+import { colors, radius, spacing } from '@/design-system/tokens';
 import { ConfirmDialog } from '@/components/confirmDialog';
 import { beanStateLabel, roastLevelLabel } from '@/domain/types';
 import { useFeedback } from '@/components/feedback';
-
-const inventoryReferenceDoseG = 15;
 
 export default function BeanDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -20,12 +20,25 @@ export default function BeanDetailScreen() {
   const [bean, setBean] = useState<BeanLot | null>(null);
   const [cups, setCups] = useState<Cup[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [recommendedDoseG, setRecommendedDoseG] = useState(15);
   const [confirmation, setConfirmation] = useState<'archive' | 'delete' | null>(null);
 
   useFocusEffect(useCallback(() => {
     if (!id) return;
     let active = true;
-    Promise.all([getBean(db, id), listCups(db, { beanId: id }), listRecipes(db, id)]).then(([b, c, r]) => { if (active) { setBean(b); setCups(c); setRecipes(r); } });
+    Promise.all([getBean(db, id), listCups(db, { beanId: id }), listRecipes(db, id), listUserGear(db), listCatalogGear(db)]).then(([b, c, r, ownedGear, catalogGear]) => {
+      if (!active) return;
+      setBean(b); setCups(c); setRecipes(r);
+      if (!b) return;
+      const availableGear = ownedGear.length ? ownedGear : catalogGear;
+      const primaryGear = (category: Gear['category']) => availableGear.find((item) => item.category === category && item.isPrimary) ?? availableGear.find((item) => item.category === category) ?? null;
+      try {
+        const recommendation = generateGuidedRecipe({ bean: b, grinder: primaryGear('grinder'), dripper: primaryGear('dripper'), filter: primaryGear('filter'), water: primaryGear('water'), previousCups: c });
+        setRecommendedDoseG(recommendation.doseG);
+      } catch {
+        setRecommendedDoseG(15);
+      }
+    });
     return () => { active = false; };
   }, [db, id]));
 
@@ -45,7 +58,7 @@ export default function BeanDetailScreen() {
 
   const hasDetails = Boolean(bean.country || bean.region || bean.variety || bean.process || bean.roastDate || bean.tastingNotes.length || bean.description);
   const preparation = [bean.process, bean.roastLevel === 'unknown' ? '' : roastLevelLabel[bean.roastLevel]].filter(Boolean).join(' · ');
-  const inventoryNotice = getInventoryNotice(bean);
+  const inventory = getInventoryStatus(bean.remainingWeightG, recommendedDoseG);
 
   return (
     <Screen header={<PageHeader title={bean.name} backLabel="보관함" backHref="/(tabs)/collection" />}>
@@ -53,7 +66,7 @@ export default function BeanDetailScreen() {
         <Text variant="label">{preparation || '가공·로스팅 정보 미입력'}</Text>
         <Text variant="title1">{bean.remainingWeightG}g</Text>
         <Text color={colors.neutral800}>처음 {bean.initialWeightG}g · {beanStateLabel[bean.state]}</Text>
-        {inventoryNotice ? <Text accessibilityRole="alert" color={inventoryNotice.color}>{inventoryNotice.message}</Text> : null}
+        {bean.state !== 'finished' ? <InventorySummary inventory={inventory} /> : null}
       </Card>
       <View style={styles.actions}><Button label="직접 조절" variant="secondary" onPress={() => router.push(`/recipe/manual?beanId=${bean.id}`)} style={styles.flex} /><Button label="추천대로 내리기" onPress={() => router.push(`/recipe/guided?beanId=${bean.id}`)} style={styles.flex} /></View>
       <Button label={hasDetails ? '원두 정보 수정' : '원두 정보 추가'} variant="secondary" onPress={() => router.push(`/add-bean?editId=${bean.id}`)} />
@@ -75,14 +88,13 @@ export default function BeanDetailScreen() {
 }
 
 function Detail({ label, value }: { label: string; value: string }) { if (!value) return null; return <View style={styles.detail}><Text variant="label" style={styles.label}>{label}</Text><Text style={styles.flex}>{value}</Text></View>; }
-function getInventoryNotice(bean: BeanLot) {
-  if (bean.state === 'finished') return null;
-  if (bean.remainingWeightG <= 0) return { message: '남은 원두가 없어요.', color: colors.error };
-  if (bean.remainingWeightG < inventoryReferenceDoseG) {
-    const shortage = Number((inventoryReferenceDoseG - bean.remainingWeightG).toFixed(1));
-    return { message: `기준 ${inventoryReferenceDoseG}g보다 ${shortage}g 부족해요.`, color: colors.error };
-  }
-  if (bean.remainingWeightG < inventoryReferenceDoseG * 2) return { message: `기준 ${inventoryReferenceDoseG}g으로 한 번 더 내릴 수 있어요.`, color: colors.cocoa };
-  return null;
+function InventorySummary({ inventory }: { inventory: ReturnType<typeof getInventoryStatus> }) {
+  const color = inventory.tone === 'critical' ? colors.error : inventory.tone === 'caution' ? colors.cocoa : colors.neutral800;
+  return (
+    <View accessible accessibilityLabel={`현재 추천 레시피 기준 ${inventory.doseG}그램. ${inventory.message}`} style={styles.inventory}>
+      <View style={styles.inventoryHeader}><Text variant="caption" color={colors.neutral600}>현재 추천 레시피 기준</Text><Text variant="label">1잔 {inventory.doseG}g</Text></View>
+      <View style={styles.inventoryResult}><Text variant="title3" color={color}>{inventory.servings}잔 가능</Text><Text variant="caption" color={color}>{inventory.message}</Text></View>
+    </View>
+  );
 }
-const styles = StyleSheet.create({ hero: { backgroundColor: colors.warmBeige }, actions: { flexDirection: 'row', gap: spacing.small }, flex: { flex: 1 }, detail: { flexDirection: 'row', gap: spacing.default, paddingVertical: spacing.compact, borderBottomWidth: 1, borderBottomColor: colors.neutral200 }, label: { width: 104 }, section: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.small } });
+const styles = StyleSheet.create({ hero: { backgroundColor: colors.warmBeige }, actions: { flexDirection: 'row', gap: spacing.small }, flex: { flex: 1 }, detail: { flexDirection: 'row', gap: spacing.default, paddingVertical: spacing.compact, borderBottomWidth: 1, borderBottomColor: colors.neutral200 }, label: { width: 104 }, section: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.small }, inventory: { gap: spacing.compact, marginTop: spacing.compact, padding: spacing.small, borderRadius: radius.medium, backgroundColor: colors.white }, inventoryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.small }, inventoryResult: { gap: 2 } });

@@ -67,9 +67,9 @@ export default function HomeScreen() {
     : today && cupsForToday.length >= 2
       ? { icon: 'arrow.left.arrow.right', eyebrow: '비교할 기록이 준비됐어요', title: '같은 원두의 두 잔을 비교해볼까요?', body: '달라진 추출값과 만족도를 나란히 볼 수 있어요.', label: '두 잔 비교하기', path: `/compare?beanId=${today.id}` }
       : today && remainingServings === 0
-        ? { icon: 'leaf.fill', eyebrow: '원두 상태 확인', title: '한 잔 분량이 조금 부족해요', body: `${today.name}은 ${today.remainingWeightG}g 남았어요. 다른 원두를 고르거나 새 원두를 추가해보세요.`, label: '보관함 보기', path: '/(tabs)/collection' }
+        ? { icon: 'leaf.fill', eyebrow: `현재 추천 ${todayRecipe?.doseG}g 기준`, title: '한 잔 분량이 조금 부족해요', body: `${today.name}은 ${today.remainingWeightG}g 남았어요. ${Number((todayRecipe!.doseG - today.remainingWeightG).toFixed(1))}g을 더 준비하거나 다른 원두를 골라보세요.`, label: '보관함 보기', path: '/(tabs)/collection' }
         : today && remainingServings === 1
-          ? { icon: 'leaf.fill', eyebrow: '마지막 한 잔 분량', title: '이 원두는 한 번 더 내릴 수 있어요', body: `${today.remainingWeightG}g 남았어요. 다음 원두를 함께 준비해두면 좋아요.`, label: '보관함 보기', path: '/(tabs)/collection' }
+          ? { icon: 'leaf.fill', eyebrow: `현재 추천 ${todayRecipe?.doseG}g 기준`, title: '이 원두는 한 번 더 내릴 수 있어요', body: `${today.remainingWeightG}g 남았어요. 다음 원두를 함께 준비해두면 좋아요.`, label: '보관함 보기', path: '/(tabs)/collection' }
           : today && lovedCupForToday
             ? { icon: 'sparkles', eyebrow: '좋았던 기록을 반영했어요', title: '마음에 들었던 한 잔을 기준으로 시작해요', body: '최근에 좋았다고 남긴 추출값을 오늘의 추천에 반영했어요.', label: '추천 레시피 보기', path: `/recipe/guided?beanId=${today.id}` }
             : goal === 'repeat' && lastHomeCup?.beanId
