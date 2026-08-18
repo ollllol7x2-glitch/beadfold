@@ -191,7 +191,7 @@ export function Card({ children, style, accessibilityLabel, tone = 'plain' }: { 
   return <View accessible={Boolean(accessibilityLabel)} accessibilityLabel={accessibilityLabel} style={[styles.card, tone === 'tinted' && styles.cardTinted, tone === 'dark' && styles.cardDark, style]}>{children}</View>;
 }
 
-/** A compact, consistent treatment for explanatory copy that is not itself an action or a value. */
+/** A compact, consistent treatment for an important constraint or a caution. */
 export function InfoNote({ body, icon = 'info.circle', style, accessibilityLabel }: { body: string; icon?: SymbolName; style?: ViewStyle; accessibilityLabel?: string }) {
   return (
     <View accessible accessibilityLabel={accessibilityLabel ?? body} style={[styles.infoNote, style]}>
@@ -475,7 +475,7 @@ const styles = StyleSheet.create({
   card: { backgroundColor: colors.white, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.neutral200, borderRadius: radius.large, padding: spacing.default, gap: spacing.small, ...shadows.soft },
   cardTinted: { backgroundColor: colors.creamDeep, borderColor: colors.neutral200 },
   cardDark: { backgroundColor: colors.action, borderColor: colors.action },
-  infoNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 7, paddingHorizontal: spacing.small, paddingVertical: spacing.compact, borderRadius: 12, backgroundColor: colors.creamDeep },
+  infoNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
   infoNoteText: { flex: 1 },
   button: { minHeight: 54, minWidth: 54, borderRadius: radius.medium, paddingHorizontal: 20, paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
   buttonPrimary: { backgroundColor: colors.action, ...shadows.soft },

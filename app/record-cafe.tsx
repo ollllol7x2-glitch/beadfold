@@ -9,6 +9,7 @@ import { localizedFlavor, satisfactionLabel, type Satisfaction } from '@/domain/
 import { colors, spacing } from '@/design-system/tokens';
 import { useFeedback } from '@/components/feedback';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
+import { useFirstInvalidField } from '@/hooks/useFirstInvalidField';
 
 const flavors = ['Floral', 'Fruity', 'Juicy', 'Sweet', 'Clean', 'Creamy', 'Nutty', 'Roasty', 'Funky'];
 
@@ -29,6 +30,7 @@ export default function RecordCafeScreen() {
   const [loading, setLoading] = useState(Boolean(cupId));
   const [saving, setSaving] = useState(false);
   const [baseline, setBaseline] = useState('');
+  const { fieldRef, focusField } = useFirstInvalidField();
   const formSnapshot = JSON.stringify({ cafeName, beanName, drinkName, satisfaction, tags, memo, imageUri });
   const isDirty = cupId ? Boolean(baseline) && baseline !== formSnapshot : Boolean(cafeName || beanName || drinkName || satisfaction || tags.length || memo || imageUri);
   const { requestExit, allowExit, exitConfirmation } = useUnsavedChangesGuard(isDirty);
@@ -62,7 +64,8 @@ export default function RecordCafeScreen() {
     const missingName = !normalizedBean && !normalizedDrink;
     setNameError(missingName ? '원두나 음료 이름 중 하나를 입력해주세요.' : '');
     setSatisfactionError(!satisfaction ? '마신 느낌을 하나 골라주세요.' : '');
-    if (missingName || !satisfaction) return;
+    if (missingName) { focusField('drinkOrBean'); return; }
+    if (!satisfaction) return;
 
     setSaving(true);
     try {
@@ -118,6 +121,7 @@ export default function RecordCafeScreen() {
         <Button label={imageUri ? '사진 바꾸기' : '사진 추가'} variant="secondary" icon="camera.fill" onPress={() => void pickImage()} />
         <Field label="카페 이름" value={cafeName} onChangeText={setCafeName} placeholder="선택 사항" />
         <Field
+          ref={fieldRef('drinkOrBean')}
           label="원두 또는 메뉴 이름"
           value={beanName}
           onChangeText={(value) => { setBeanName(value); setNameError(''); }}

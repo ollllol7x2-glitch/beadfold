@@ -25,6 +25,7 @@ export default function RecordCupScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [error, setError] = useState('');
+  const [satisfactionError, setSatisfactionError] = useState('');
   const [saving, setSaving] = useState(false);
   const [baseline, setBaseline] = useState('');
   const formSnapshot = JSON.stringify({ satisfaction, tags, taste, memo, imageUri });
@@ -34,7 +35,7 @@ export default function RecordCupScreen() {
   useFocusEffect(useCallback(() => { if (!cupId) return; let active = true; getCup(db, cupId).then((value) => { if (active && value) { setCup(value); setSatisfaction(value.satisfaction); setTags(value.flavorTags); setTaste(value.taste); setMemo(value.memo); setImageUri(value.imageUri); setBaseline(JSON.stringify({ satisfaction: value.satisfaction, tags: value.flavorTags, taste: value.taste, memo: value.memo, imageUri: value.imageUri })); } }); return () => { active = false; }; }, [cupId, db]));
   const toggleTag = (tag: string) => setTags((current) => current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]);
   const save = async () => {
-    if (!cup || !satisfaction) return setError('이 컵이 어땠는지 하나를 선택해주세요.');
+    if (!cup || !satisfaction) { setSatisfactionError('마신 느낌을 하나 골라주세요.'); return; }
     setSaving(true);
     try {
       await recordCupFeedback(db, cup.id, { satisfaction, flavorTags: tags, taste, memo: memo.trim(), imageUri });
@@ -58,11 +59,12 @@ export default function RecordCupScreen() {
       <View style={styles.satisfactionChoices}>{(['not_for_me', 'good', 'loved'] as Satisfaction[]).map((value) => {
         const selected = satisfaction === value;
         const icon = value === 'loved' ? 'heart.fill' : value === 'good' ? 'face.smiling' : 'hand.thumbsdown.fill';
-        return <Pressable key={value} accessibilityRole="button" accessibilityLabel={satisfactionLabel[value]} accessibilityState={{ selected }} onPress={() => { setSatisfaction(value); setError(''); }} style={({ pressed }) => [styles.satisfactionChoice, selected && styles.satisfactionChoiceSelected, pressed && styles.pressed]}>
+        return <Pressable key={value} accessibilityRole="button" accessibilityLabel={satisfactionLabel[value]} accessibilityState={{ selected }} onPress={() => { setSatisfaction(value); setSatisfactionError(''); }} style={({ pressed }) => [styles.satisfactionChoice, selected && styles.satisfactionChoiceSelected, pressed && styles.pressed]}>
           <View style={[styles.ratingIcon, selected && styles.ratingIconSelected]}><Icon name={icon} size={23} color={selected ? colors.cream : colors.espresso} /></View>
           <Text variant="label" color={selected ? colors.cream : colors.charcoal}>{satisfactionLabel[value]}</Text>
         </Pressable>;
       })}</View>
+      {satisfactionError ? <Text accessibilityRole="alert" variant="caption" color={colors.error}>{satisfactionError}</Text> : null}
       <View style={styles.flavorSection}>
         <View style={styles.sectionCopy}><Text variant="title3">떠오른 맛</Text><Text variant="caption" color={colors.neutral600}>여러 개 골라도 좋아요.</Text></View>
         <View style={styles.tagChoices}>{flavors.map((flavor) => <Chip key={flavor} label={flavorLabels[flavor]!} selected={tags.includes(flavor)} onPress={() => toggleTag(flavor)} />)}</View>

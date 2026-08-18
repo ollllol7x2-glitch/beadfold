@@ -6,6 +6,7 @@ import { Button, Card, Field, InfoNote, PageHeader, Screen, Text } from '@/compo
 import { adjustBeanInventory, getBean } from '@/database/repository';
 import { spacing } from '@/design-system/tokens';
 import { useFeedback } from '@/components/feedback';
+import { useFirstInvalidField } from '@/hooks/useFirstInvalidField';
 
 export default function BeanInventoryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -14,6 +15,7 @@ export default function BeanInventoryScreen() {
   const [beanName, setBeanName] = useState('');
   const [weight, setWeight] = useState('');
   const [error, setError] = useState('');
+  const { fieldRef, focusField } = useFirstInvalidField();
 
   useFocusEffect(useCallback(() => {
     if (!id) return;
@@ -24,12 +26,12 @@ export default function BeanInventoryScreen() {
 
   const save = async () => {
     const nextWeight = Number(weight);
-    if (!id || !Number.isFinite(nextWeight) || nextWeight < 0 || nextWeight > 10000) return setError('남은 양을 0g부터 10,000g 사이로 입력해주세요.');
+    if (!id || !Number.isFinite(nextWeight) || nextWeight < 0 || nextWeight > 10000) { setError('남은 양을 0g부터 10,000g 사이로 입력해주세요.'); focusField('weight'); return; }
     try { await adjustBeanInventory(db, id, nextWeight); showFeedback('남은 양을 맞췄어요. 재고 이력에서도 확인할 수 있어요.'); router.back(); } catch (cause) { setError(cause instanceof Error ? cause.message : '재고를 저장하지 못했어요.'); }
   };
 
   return <Screen header={<PageHeader title="재고 맞추기" backLabel="원두" backHref={`/bean/${id}`} />} contentContainerStyle={styles.screen}>
-    <Card><Text variant="title2">{beanName || '원두'}</Text><InfoNote body="봉투의 실제 무게를 확인한 뒤 남은 양을 맞춰주세요." /><Field label="실제 남은 양 (g)" value={weight} onChangeText={(value) => { setWeight(value); setError(''); }} keyboardType="decimal-pad" error={error} /></Card>
+    <Card><Text variant="title2">{beanName || '원두'}</Text><InfoNote body="봉투의 실제 무게를 확인한 뒤 남은 양을 맞춰주세요." /><Field ref={fieldRef('weight')} label="실제 남은 양 (g)" value={weight} onChangeText={(value) => { setWeight(value); setError(''); }} keyboardType="decimal-pad" error={error} /></Card>
     <InfoNote body="입력한 양과 이전 재고의 차이를 재고 이력에 기록합니다." />
     <Button label="재고 저장" onPress={() => void save()} />
   </Screen>;

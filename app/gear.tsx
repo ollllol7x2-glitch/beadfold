@@ -8,6 +8,7 @@ import type { Gear } from '@/domain/types';
 import { colors, spacing } from '@/design-system/tokens';
 import { ConfirmDialog } from '@/components/confirmDialog';
 import { useFeedback } from '@/components/feedback';
+import { useFirstInvalidField } from '@/hooks/useFirstInvalidField';
 
 const categories: Gear['category'][] = ['grinder', 'dripper', 'filter', 'kettle', 'scale', 'water'];
 const labels: Record<Gear['category'], string> = { grinder: '그라인더', dripper: '드리퍼', filter: '필터', kettle: '주전자', scale: '저울', water: '물' };
@@ -23,6 +24,7 @@ export default function GearScreen() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [removeTarget, setRemoveTarget] = useState<Gear | null>(null);
+  const { fieldRef, focusField } = useFirstInvalidField();
 
   const load = useCallback(async () => {
     const [nextCatalog, nextOwned] = await Promise.all([listCatalogGear(db), listUserGear(db)]);
@@ -104,9 +106,9 @@ export default function GearScreen() {
 
       <Card>
         <Text variant="title3">목록에 없나요?</Text>
-        <Field label="장비 이름" value={customName} onChangeText={(value) => { setCustomName(value); setCustomError(''); }} placeholder="직접 입력해주세요" error={customError} />
+        <Field ref={fieldRef('customName')} label="장비 이름" value={customName} onChangeText={(value) => { setCustomName(value); setCustomError(''); }} placeholder="직접 입력해주세요" error={customError} />
         <Button label="직접 추가" onPress={() => {
-          if (!customName.trim()) return setCustomError('장비 이름을 입력해주세요.');
+          if (!customName.trim()) { setCustomError('장비 이름을 입력해주세요.'); focusField('customName'); return; }
           const name = customName.trim();
           setCustomName('');
           void add({ id: '', category, name, brand: '', isPrimary: false, isCustom: true, metadata: {} }, true);

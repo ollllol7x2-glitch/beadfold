@@ -10,6 +10,7 @@ import { colors, radius, spacing } from '@/design-system/tokens';
 import { useFeedback } from '@/components/feedback';
 import { isBeanLabelOcrAvailable, recognizeBeanLabel, type BeanLabelOcrResult } from '@/services/beanLabelOcr';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
+import { useFirstInvalidField } from '@/hooks/useFirstInvalidField';
 
 const roastLevels: { value: RoastLevel; label: string }[] = [
   { value: 'unknown', label: '모름' },
@@ -32,6 +33,7 @@ export default function AddBeanScreen() {
   const [detailsOpen, setDetailsOpen] = useState(Boolean(editId || copyFromId));
   const [searchOpen, setSearchOpen] = useState(false);
   const [labelText, setLabelText] = useState('');
+  const [labelError, setLabelError] = useState('');
   const [roaster, setRoaster] = useState('');
   const [country, setCountry] = useState('');
   const [region, setRegion] = useState('');
@@ -44,6 +46,8 @@ export default function AddBeanScreen() {
   const [notes, setNotes] = useState('');
   const [description, setDescription] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [nameError, setNameError] = useState('');
+  const [weightError, setWeightError] = useState('');
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
   const [recognizing, setRecognizing] = useState(false);
@@ -51,6 +55,7 @@ export default function AddBeanScreen() {
   const [existing, setExisting] = useState<BeanLot | null>(null);
   const [saved, setSaved] = useState<BeanLot | null>(null);
   const [baseline, setBaseline] = useState('');
+  const { fieldRef, focusField } = useFirstInvalidField();
 
   const formSnapshot = JSON.stringify({ name, weight, roaster, country, region, variety, process, roastDate, roastLevel, storageType, beanState, notes, description, imageUri });
   const isDirty = existing ? Boolean(baseline) && baseline !== formSnapshot : Boolean(name || weight || roaster || country || region || variety || process || roastDate || storageType || notes || description || imageUri);
@@ -128,7 +133,7 @@ export default function AddBeanScreen() {
 
   const findFromLabel = async () => {
     const query = labelText.trim();
-    if (!query) return setError('봉투에 적힌 원두 이름이나 산지를 입력해주세요.');
+    if (!query) { setLabelError('봉투에 적힌 원두 이름이나 산지를 입력해주세요.'); focusField('labelText'); return; }
     void trackEvent(db, 'bean_search', { query_length: query.length });
     const matches = await matchKnowledgeFromLabel(db, query);
     for (const match of matches) {
@@ -146,8 +151,8 @@ export default function AddBeanScreen() {
 
   const save = async () => {
     const grams = Number(weight);
-    if (!name.trim()) return setError('원두 이름을 입력해주세요.');
-    if (!Number.isFinite(grams) || grams <= 0 || grams > 10000) return setError('남은 양을 1g부터 10,000g 사이로 입력해주세요.');
+    if (!name.trim()) { setNameError('원두 이름을 입력해주세요.'); focusField('name'); return; }
+    if (!Number.isFinite(grams) || grams <= 0 || grams > 10000) { setWeightError('남은 양을 1g부터 10,000g 사이로 입력해주세요.'); focusField('weight'); return; }
     setSaving(true);
     try {
       const draft = {
@@ -188,7 +193,7 @@ export default function AddBeanScreen() {
 
     {searchOpen ? <Card tone="tinted">
       <Text variant="title3">봉투에는 뭐라고 적혀 있나요?</Text>
-      <Field label="원두 이름 또는 산지" value={labelText} onChangeText={setLabelText} placeholder="예: Ethiopia Guji Washed" onSubmitEditing={() => void findFromLabel()} />
+      <Field ref={fieldRef('labelText')} label="원두 이름 또는 산지" value={labelText} onChangeText={(value) => { setLabelText(value); setLabelError(''); }} placeholder="예: Ethiopia Guji Washed" onSubmitEditing={() => void findFromLabel()} error={labelError} />
       <Button label="정보 찾기" variant="secondary" onPress={() => void findFromLabel()} />
     </Card> : null}
 
@@ -199,8 +204,8 @@ export default function AddBeanScreen() {
 
     <Card style={styles.quickCard}>
       <View><Text variant="title2">빠른 추가</Text><Text color={colors.neutral600}>두 가지만 입력하면 저장할 수 있어요.</Text></View>
-      <Field label="원두 이름" value={name} onChangeText={(value) => { setName(value); setError(''); }} placeholder="예: 과테말라 엘 인헤르토" />
-      <Field label="남은 양 (g)" value={weight} onChangeText={(value) => { setWeight(value); setError(''); }} keyboardType="decimal-pad" placeholder="예: 200" hint="봉투에 남은 양을 대략 적어도 괜찮아요." />
+      <Field ref={fieldRef('name')} label="원두 이름" value={name} onChangeText={(value) => { setName(value); setNameError(''); setError(''); }} placeholder="예: 과테말라 엘 인헤르토" error={nameError} />
+      <Field ref={fieldRef('weight')} label="남은 양 (g)" value={weight} onChangeText={(value) => { setWeight(value); setWeightError(''); setError(''); }} keyboardType="decimal-pad" placeholder="예: 200" hint="봉투에 남은 양을 대략 적어도 괜찮아요." error={weightError} />
     </Card>
 
     <Pressable accessibilityRole="button" accessibilityLabel={`원두 정보 더 입력하기, 현재 ${detailsOpen ? '펼쳐짐' : '접힘'}`} onPress={() => setDetailsOpen((current) => !current)} style={styles.disclosure}>

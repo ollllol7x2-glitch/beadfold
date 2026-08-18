@@ -51,15 +51,13 @@ export default function SettingsScreen() {
     } catch { setStatus('복원하지 못했어요. 백업 파일을 다시 확인해주세요.'); }
     finally { setPendingRestore(null); setBackupBusy(false); }
   };
-  const storageCopy = Platform.OS === 'web' ? '기록은 이 브라우저에 저장돼요. 브라우저 데이터를 지우면 함께 사라질 수 있어요.' : '기록은 이 휴대폰에 저장돼요. 앱을 지우면 함께 사라질 수 있어요.';
   return <Screen header={<PageHeader title="설정" backLabel="마이페이지" backHref="/(tabs)/profile" />} contentContainerStyle={styles.screen}>
     {status ? <Text accessibilityRole="alert" color={colors.neutral600}>{status}</Text> : null}
     <View style={styles.group}><Setting icon="iphone.vibrate" label="단계 알림 진동" body="다음 단계가 되면 짧게 알려줘요" value={haptics} onChange={(value) => void update('haptics', value, setHaptics)} /><Setting icon="speaker.wave.2.fill" label="알림 소리" body="맛 기록 알림을 소리와 함께 받아요" value={sound} onChange={(value) => void update('sound', value, setSound)} /></View>
     {Platform.OS !== 'web' ?
       <Card tone="tinted"><View style={styles.cardTitle}><Icon name="bell.badge.fill" size={23} /><Text variant="title3">맛 기록 알림</Text></View><Text color={colors.neutral600}>브루잉을 마친 뒤 맛이 선명할 때 한 번 알려드려요.</Text><Button label="알림 켜기" variant="secondary" onPress={() => void notifications()} /></Card>
       : null}
-    <Card><View style={styles.cardTitle}><Icon name="iphone" size={23} /><Text variant="title3">저장 위치</Text></View><InfoNote body={storageCopy} /></Card>
-    <Card><View style={styles.cardTitle}><Icon name="archivebox.fill" size={23} /><Text variant="title3">데이터와 백업</Text></View><InfoNote body="원두, 레시피, 브루잉과 맛 기록을 파일로 안전하게 보관하세요." />{Platform.OS === 'web' ? <><View style={styles.backupActions}><Button label="백업 파일 만들기" variant="secondary" loading={backupBusy} onPress={() => void exportBackup()} style={styles.flex} /><Button label="백업 파일 불러오기" variant="secondary" disabled={backupBusy} onPress={selectBackup} style={styles.flex} /></View><InfoNote body="불러오면 현재 기록을 백업 파일의 내용으로 바꿔요. 사진 파일은 함께 복사되지 않을 수 있어요." /></> : <InfoNote body="파일 백업과 복원은 웹 버전에서 사용할 수 있어요." />}</Card>
+    <Card><View style={styles.cardTitle}><Icon name="archivebox.fill" size={23} /><Text variant="title3">데이터와 백업</Text></View>{Platform.OS === 'web' ? <><Text variant="caption" color={colors.neutral600}>이 브라우저에 저장됨</Text><View style={styles.backupActions}><Button label="백업 파일 만들기" variant="secondary" loading={backupBusy} onPress={() => void exportBackup()} style={styles.flex} /><Button label="백업 파일 불러오기" variant="secondary" disabled={backupBusy} onPress={selectBackup} style={styles.flex} /></View><InfoNote body="불러오면 현재 기록을 백업 파일의 내용으로 바꿔요. 사진 파일은 함께 복사되지 않을 수 있어요." /></> : <Text variant="caption" color={colors.neutral600}>이 휴대폰에 저장돼요. 파일 백업과 복원은 웹 버전에서 사용할 수 있어요.</Text>}</Card>
     <ConfirmDialog visible={pendingRestore != null} title="백업 파일로 복원할까요?" body={pendingRestore ? `현재 기록은 바뀌어요. 원두 ${summarizeBackup(pendingRestore).beans}개와 커피 기록 ${summarizeBackup(pendingRestore).cups}개를 가져옵니다.` : ''} confirmLabel="복원하기" destructive onCancel={() => setPendingRestore(null)} onConfirm={() => void restoreBackup()} />
   </Screen>;
 }
