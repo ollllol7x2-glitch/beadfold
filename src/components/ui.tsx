@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
   content: { flexGrow: 1, paddingHorizontal: 20, paddingTop: spacing.small, paddingBottom: spacing.large, gap: spacing.roomy },
   contentWithHeader: { paddingTop: spacing.default },
   contentNoNav: { paddingBottom: spacing.section },
-  screenHeader: { zIndex: 2, paddingHorizontal: 20, paddingTop: spacing.compact, paddingBottom: spacing.small, backgroundColor: colors.cream, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.neutral200 },
+  screenHeader: { zIndex: 20, ...(Platform.OS === 'web' ? { position: 'sticky' as never, top: 0 } : {}), paddingHorizontal: 20, paddingTop: spacing.compact, paddingBottom: spacing.small, backgroundColor: colors.cream, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.neutral200 },
   card: { backgroundColor: colors.white, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.neutral200, borderRadius: radius.large, padding: spacing.default, gap: spacing.small, ...shadows.soft },
   cardTinted: { backgroundColor: colors.creamDeep, borderColor: colors.warmBeige },
   cardDark: { backgroundColor: colors.espresso, borderColor: colors.espresso },
