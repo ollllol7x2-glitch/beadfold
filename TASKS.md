@@ -21,9 +21,12 @@
 - [x] IA correction: Home, Journal, Collection, Profile, and one clear global Add action
 - [x] Low-friction Bean intake with two-field quick save, photo/search entry, and optional details
 - [x] Cup photo, nullable advanced taste values, Korean flavor display, honest Compare, and recent Taste trend
-- [x] Collection sections for Beans/Recipes/Gear/Cafes, primary Gear, Bean restore, and permanent delete
+- [x] Collection sections for Beans/Recipes/Gear, primary Gear, Bean restore, and permanent delete
 - [x] Mobile web SPA export, dynamic-route fallback, one-tab SQLite recovery, and GitHub Pages workflow
 - [x] CRUD trust pass: honest Bean defaults, full Cafe/Cup/Gear update-delete controls, reversible state-preserving archive, completion feedback, and immediate Cafe-save undo
+- [x] IA remediation: four-domain navigation plus a contextual Global Add sheet; no standalone Add destination or Journal → Add detour
+- [x] Task-screen contract: consistent close/back headers, fixed completion bars, progressive manual-recipe detail, and unsaved-work confirmation on Bean/Cafe/Cup/Manual editing
+- [x] Journey remediation: goal-aware Home next action, pending Cup follow-up, direct bean picker, selection-first Journal comparison, and Cafe removal from Collection
 
 ## Release certification — external environment/human checks
 

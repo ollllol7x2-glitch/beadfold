@@ -1,14 +1,15 @@
 import { useCallback, useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { Button, Card, Chip, Field, PageHeader, Screen, Text } from '@/components/ui';
+import { BottomActionBar, Button, Card, Chip, Field, Icon, Screen, TaskHeader, Text } from '@/components/ui';
 import { createManualRecipe, validateRecipe } from '@/domain/recipeEngine';
 import type { BeanLot, Recipe } from '@/domain/types';
 import { deleteRecipe, duplicateRecipe, getBean, getRecipe, listBeans, saveRecipe, startBrew } from '@/database/repository';
 import { colors, spacing } from '@/design-system/tokens';
 import { ConfirmDialog } from '@/components/confirmDialog';
 import { useFeedback } from '@/components/feedback';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 
 export default function ManualRecipeScreen() {
   const { beanId, recipeId } = useLocalSearchParams<{ beanId?: string; recipeId?: string }>();
@@ -19,6 +20,8 @@ export default function ManualRecipeScreen() {
   const [errors, setErrors] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [baseline, setBaseline] = useState('');
 
   useFocusEffect(useCallback(() => {
     let active = true;
@@ -26,10 +29,15 @@ export default function ManualRecipeScreen() {
       const stored = recipeId ? await getRecipe(db, recipeId) : null;
       const targetBean = await getBean(db, beanId ?? stored?.beanId ?? '') ?? (await listBeans(db))[0] ?? null;
       if (!active || !targetBean) return;
-      setBean(targetBean); setRecipe(stored ?? createManualRecipe(targetBean));
+      const targetRecipe = stored ?? createManualRecipe(targetBean);
+      setBean(targetBean); setRecipe(targetRecipe); setBaseline(JSON.stringify(targetRecipe));
     })();
     return () => { active = false; };
   }, [beanId, db, recipeId]));
+
+  const recipeSnapshot = recipe ? JSON.stringify(recipe) : '';
+  const isDirty = Boolean(baseline && recipeSnapshot && baseline !== recipeSnapshot);
+  const { requestExit, allowExit, exitConfirmation } = useUnsavedChangesGuard(isDirty);
 
   const recalc = (next: Recipe): Recipe => {
     const ratio = next.doseG > 0 ? Number((next.waterMl / next.doseG).toFixed(1)) : 0;
@@ -73,15 +81,15 @@ export default function ManualRecipeScreen() {
   };
   const validation = useMemo(() => recipe ? validateRecipe(recipe) : [], [recipe]);
 
-  const save = async () => { if (!recipe) return; if (validation.length) return setErrors(validation); await saveRecipe(db, recipe); setErrors([]); setSaved(true); };
-  const brew = async () => { if (!recipe || !bean) return; if (validation.length) return setErrors(validation); await saveRecipe(db, recipe); const session = await startBrew(db, bean, recipe); router.replace(`/brew/${session.id}`); };
-  const remove = async () => { if (!recipe) return; await deleteRecipe(db, recipe.id); setConfirmDelete(false); showFeedback('레시피를 삭제했어요.'); router.back(); };
+  const save = async () => { if (!recipe) return; if (validation.length) return setErrors(validation); await saveRecipe(db, recipe); setErrors([]); setBaseline(JSON.stringify(recipe)); setSaved(true); };
+  const brew = async () => { if (!recipe || !bean) return; if (validation.length) return setErrors(validation); await saveRecipe(db, recipe); allowExit(); const session = await startBrew(db, bean, recipe); router.replace(`/brew/${session.id}`); };
+  const remove = async () => { if (!recipe) return; await deleteRecipe(db, recipe.id); setConfirmDelete(false); showFeedback('레시피를 삭제했어요.'); allowExit(); router.back(); };
 
   if (!bean || !recipe) return <Screen><Text>직접 레시피를 만들려면 먼저 원두를 골라주세요.</Text><Button label="원두 추가" onPress={() => router.replace('/add-bean')} /></Screen>;
 
   return (
-    <Screen>
-      <PageHeader title="내 방식으로 내리기" description="원두와 물, 시간, 붓는 순서를 직접 정해보세요." backLabel="원두" />
+    <Screen showNavigation={false} footer={<BottomActionBar primaryLabel="이 레시피로 브루잉" primaryDisabled={Boolean(validation.length)} onPrimaryPress={() => void brew()} secondaryLabel="저장" onSecondaryPress={() => void save()} />}>
+      <TaskHeader title="내 방식으로 내리기" description="먼저 핵심 값만 정하고, 필요할 때 세부 단계를 조절하세요." onClose={() => requestExit(() => router.back())} />
       {errors.length ? <Card style={styles.error}>{errors.map((error) => <Text key={error} accessibilityRole="alert" color={colors.error}>오류: {error}</Text>)}</Card> : null}
       {saved ? <Text accessibilityRole="alert" color={colors.neutral800}>저장했어요. 다음에도 이 레시피를 사용할 수 있어요.</Text> : null}
       <Field label="레시피 이름" value={recipe.name} onChangeText={(value) => updateText('name', value)} />
@@ -89,19 +97,12 @@ export default function ManualRecipeScreen() {
       <View style={styles.grid}><View style={styles.flex}><Field label="원두 (g)" value={String(recipe.doseG)} onChangeText={(value) => updateNumber('doseG', value)} keyboardType="decimal-pad" /></View><View style={styles.flex}><Field label="물 (ml)" value={String(recipe.waterMl)} onChangeText={(value) => updateNumber('waterMl', value)} keyboardType="decimal-pad" /></View></View>
       <View style={styles.grid}><View style={styles.flex}><Field label="온도 (℃)" value={String(recipe.temperatureC)} onChangeText={(value) => updateNumber('temperatureC', value)} keyboardType="decimal-pad" /></View><View style={styles.flex}><Field label="총 시간 (초)" value={String(recipe.totalTimeSec)} onChangeText={(value) => updateNumber('totalTimeSec', value)} keyboardType="number-pad" /></View></View>
       <Field label="뜸 시간 (초)" value={String(recipe.bloomSec)} onChangeText={(value) => updateNumber('bloomSec', value)} keyboardType="number-pad" />
-      <Field label="분쇄도" value={recipe.grindTarget} onChangeText={(value) => updateText('grindTarget', value)} />
-      <Field label="그라인더" value={recipe.grinder} onChangeText={(value) => updateText('grinder', value)} />
-      <Field label="드리퍼" value={recipe.dripper} onChangeText={(value) => updateText('dripper', value)} />
-      <Field label="필터" value={recipe.filter} onChangeText={(value) => updateText('filter', value)} />
-      <Field label="물 프로필" value={recipe.waterProfile} onChangeText={(value) => updateText('waterProfile', value)} />
-      <Card><Text variant="title3">붓는 순서 직접 편집</Text><Text color={colors.neutral800}>위의 목표값을 바꾸면 각 단계를 자동으로 맞춰요. 아래에서 시간과 물양을 바꾸면 총 시간과 전체 물양도 함께 바뀝니다.</Text>{recipe.steps.map((step, index) => <View key={step.id} style={styles.step}><Text variant="label">{step.order + 1}. {step.name} · 누적 {step.waterTotalMl}ml</Text><View style={styles.grid}><View style={styles.flex}><Field label="시간 (초)" value={String(step.durationSec)} onChangeText={(value) => updateStep(index, 'durationSec', value)} keyboardType="number-pad" /></View><View style={styles.flex}><Field label="물양 (ml)" value={String(step.waterDeltaMl)} onChangeText={(value) => updateStep(index, 'waterDeltaMl', value)} keyboardType="number-pad" /></View></View></View>)}</Card>
-      <Button label="저장" variant="secondary" onPress={() => void save()} />
-      <Button label="이 레시피로 브루잉" onPress={() => void brew()} />
-      {recipeId ? <Button label="복제" variant="secondary" onPress={async () => { const copy = await duplicateRecipe(db, recipe); showFeedback('레시피 복사본을 만들었어요.'); router.replace(`/recipe/manual?recipeId=${copy.id}`); }} /> : null}
-      {recipeId ? <Button label="삭제" variant="danger" onPress={() => setConfirmDelete(true)} /> : null}
+      <Pressable accessibilityRole="button" accessibilityState={{ expanded: detailsOpen }} onPress={() => setDetailsOpen((value) => !value)} style={styles.disclosure}><View style={styles.flex}><Text variant="title3">장비와 세부 단계 조절</Text><Text color={colors.neutral800}>분쇄도, 장비, 붓는 순서를 직접 바꿀 수 있어요.</Text></View><Icon name={detailsOpen ? 'chevron.up' : 'chevron.down'} /></Pressable>
+      {detailsOpen ? <View style={styles.details}><Field label="분쇄도" value={recipe.grindTarget} onChangeText={(value) => updateText('grindTarget', value)} /><Field label="그라인더" value={recipe.grinder} onChangeText={(value) => updateText('grinder', value)} /><Field label="드리퍼" value={recipe.dripper} onChangeText={(value) => updateText('dripper', value)} /><Field label="필터" value={recipe.filter} onChangeText={(value) => updateText('filter', value)} /><Field label="물 프로필" value={recipe.waterProfile} onChangeText={(value) => updateText('waterProfile', value)} /><Card><Text variant="title3">붓는 순서 직접 편집</Text><Text color={colors.neutral800}>시간과 물양을 바꾸면 총 시간과 전체 물양도 함께 갱신돼요.</Text>{recipe.steps.map((step, index) => <View key={step.id} style={styles.step}><Text variant="label">{step.order + 1}. {step.name} · 누적 {step.waterTotalMl}ml</Text><View style={styles.grid}><View style={styles.flex}><Field label="시간 (초)" value={String(step.durationSec)} onChangeText={(value) => updateStep(index, 'durationSec', value)} keyboardType="number-pad" /></View><View style={styles.flex}><Field label="물양 (ml)" value={String(step.waterDeltaMl)} onChangeText={(value) => updateStep(index, 'waterDeltaMl', value)} keyboardType="number-pad" /></View></View></View>)}</Card>{recipeId ? <Button label="복제" variant="secondary" onPress={async () => { const copy = await duplicateRecipe(db, recipe); allowExit(); showFeedback('레시피 복사본을 만들었어요.'); router.replace(`/recipe/manual?recipeId=${copy.id}`); }} /> : null}{recipeId ? <Button label="삭제" variant="danger" onPress={() => setConfirmDelete(true)} /> : null}</View> : null}
       <ConfirmDialog visible={confirmDelete} title="레시피를 삭제할까요?" body="이미 기록한 커피는 그대로 남아요." confirmLabel="삭제" destructive onCancel={() => setConfirmDelete(false)} onConfirm={() => void remove()} />
+      {exitConfirmation}
     </Screen>
   );
 }
 
-const styles = StyleSheet.create({ grid: { flexDirection: 'row', gap: spacing.small }, chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.compact }, flex: { flex: 1 }, error: { borderColor: colors.error }, step: { borderTopWidth: 1, borderTopColor: colors.neutral200, paddingTop: spacing.small, gap: spacing.compact } });
+const styles = StyleSheet.create({ grid: { flexDirection: 'row', gap: spacing.small }, chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.compact }, flex: { flex: 1 }, error: { borderColor: colors.error }, disclosure: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: spacing.small, padding: spacing.small, borderRadius: 16, borderWidth: 1, borderColor: colors.neutral200, backgroundColor: colors.white }, details: { gap: spacing.default }, step: { borderTopWidth: 1, borderTopColor: colors.neutral200, paddingTop: spacing.small, gap: spacing.compact } });

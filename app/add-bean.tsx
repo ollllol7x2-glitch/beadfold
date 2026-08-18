@@ -3,12 +3,13 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import * as ImagePicker from 'expo-image-picker';
-import { Button, Card, Chip, Field, Icon, PageHeader, Screen, Text } from '@/components/ui';
+import { BottomActionBar, Button, Card, Chip, Field, Icon, Screen, TaskHeader, Text } from '@/components/ui';
 import { createBean, getBean, matchKnowledgeFromLabel, trackEvent, updateBean } from '@/database/repository';
 import type { BeanLot, BeanState, RoastLevel } from '@/domain/types';
 import { colors, radius, spacing } from '@/design-system/tokens';
 import { useFeedback } from '@/components/feedback';
 import { isBeanLabelOcrAvailable, recognizeBeanLabel, type BeanLabelOcrResult } from '@/services/beanLabelOcr';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 
 const roastLevels: { value: RoastLevel; label: string }[] = [
   { value: 'unknown', label: '모름' },
@@ -49,6 +50,11 @@ export default function AddBeanScreen() {
   const [saving, setSaving] = useState(false);
   const [existing, setExisting] = useState<BeanLot | null>(null);
   const [saved, setSaved] = useState<BeanLot | null>(null);
+  const [baseline, setBaseline] = useState('');
+
+  const formSnapshot = JSON.stringify({ name, weight, roaster, country, region, variety, process, roastDate, roastLevel, storageType, beanState, notes, description, imageUri });
+  const isDirty = existing ? Boolean(baseline) && baseline !== formSnapshot : Boolean(name || weight || roaster || country || region || variety || process || roastDate || storageType || notes || description || imageUri);
+  const { requestExit, allowExit, exitConfirmation } = useUnsavedChangesGuard(isDirty);
 
   useEffect(() => {
     if (!editId) void trackEvent(db, 'bean_add_started');
@@ -60,6 +66,7 @@ export default function AddBeanScreen() {
       setVariety(bean.variety); setProcess(bean.process); setRoastDate(bean.roastDate ?? ''); setRoastLevel(bean.roastLevel);
       setWeight(String(bean.remainingWeightG)); setInitialWeight(bean.initialWeightG); setNotes(bean.tastingNotes.join(', '));
       setDescription(bean.description); setImageUri(bean.imageUri); setStorageType(bean.storageType); setBeanState(bean.state);
+      setBaseline(beanFormSnapshot(bean));
     });
     return () => { active = false; };
   }, [db, editId]);
@@ -148,6 +155,7 @@ export default function AddBeanScreen() {
       if (existing) await updateBean(db, bean);
       if (existing) {
         showFeedback('원두 정보를 수정했어요.');
+        allowExit();
         router.replace(`/bean/${bean.id}`);
       } else setSaved(bean);
     } catch (caught) {
@@ -160,13 +168,13 @@ export default function AddBeanScreen() {
       <View style={styles.successIcon}><Icon name="checkmark" size={32} color={colors.cream} weight="bold" /></View>
       <View style={styles.successCopy}><Text variant="title1" accessibilityRole="header">원두를 추가했어요</Text><Text variant="bodyLarge" color={colors.neutral800}>{saved.name}. 지금 바로 내리거나, 정보를 더 채울 수 있어요.</Text></View>
       <Button label="이 원두로 바로 내리기" icon="waterbottle.fill" onPress={() => router.replace(`/recipe/guided?beanId=${saved.id}`)} />
-      <Button label="원두 정보 더 입력하기" variant="secondary" onPress={() => { setExisting(saved); setSaved(null); setDetailsOpen(true); }} />
+      <Button label="원두 정보 더 입력하기" variant="secondary" onPress={() => { setExisting(saved); setBaseline(beanFormSnapshot(saved)); setSaved(null); setDetailsOpen(true); }} />
       <Button label="보관함에서 보기" variant="tertiary" onPress={() => router.replace(`/bean/${saved.id}`)} />
     </Screen>;
   }
 
-  return <Screen showNavigation={false} contentContainerStyle={styles.screen}>
-    <PageHeader title={existing ? '원두 정보 수정' : '새 원두 추가'} description={existing ? '바뀐 정보만 고쳐주세요.' : '이름과 남은 양만 알면 바로 시작할 수 있어요.'} action={<Button label="닫기" variant="tertiary" onPress={() => router.back()} />} />
+  return <Screen showNavigation={false} contentContainerStyle={styles.screen} footer={<BottomActionBar primaryLabel={existing ? '변경사항 저장' : '원두 추가'} primaryLoading={saving} onPrimaryPress={() => void save()} />}>
+    <TaskHeader title={existing ? '원두 정보 수정' : '새 원두 추가'} description={existing ? '바뀐 정보만 고쳐주세요.' : '이름과 남은 양만 알면 바로 시작할 수 있어요.'} onClose={() => requestExit(() => router.back())} />
 
     {!existing ? <View style={styles.sources}>
       <SourceAction icon="camera.fill" title="봉투 촬영" body="사진에서 필요한 정보를 찾아 채워요" onPress={() => void pickImage(true)} />
@@ -210,7 +218,7 @@ export default function AddBeanScreen() {
       <Field label="메모" value={description} onChangeText={setDescription} multiline placeholder="기억할 내용을 자유롭게 남겨주세요." style={styles.memo} />
     </View> : null}
 
-    <Button label={existing ? '변경사항 저장' : '원두 추가'} loading={saving} onPress={() => void save()} style={styles.saveButton} />
+    {exitConfirmation}
   </Screen>;
 }
 
@@ -220,6 +228,10 @@ function SourceAction({ icon, title, body, onPress }: { icon: Parameters<typeof 
   </Pressable>;
 }
 
+function beanFormSnapshot(bean: BeanLot) {
+  return JSON.stringify({ name: bean.name, weight: String(bean.remainingWeightG), roaster: bean.roaster, country: bean.country, region: bean.region, variety: bean.variety, process: bean.process, roastDate: bean.roastDate ?? '', roastLevel: bean.roastLevel, storageType: bean.storageType, beanState: bean.state, notes: bean.tastingNotes.join(', '), description: bean.description, imageUri: bean.imageUri });
+}
+
 const styles = StyleSheet.create({
   screen: { gap: spacing.section }, successScreen: { flex: 1, justifyContent: 'center', gap: spacing.default },
   successIcon: { width: 68, height: 68, borderRadius: 24, backgroundColor: colors.success, alignItems: 'center', justifyContent: 'center' }, successCopy: { gap: spacing.compact, marginBottom: spacing.small },
@@ -227,5 +239,5 @@ const styles = StyleSheet.create({
   sourceIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
   quickCard: { gap: spacing.default }, disclosure: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: spacing.small, paddingVertical: spacing.compact }, disclosureCopy: { flex: 1, gap: 2 },
   details: { gap: spacing.default }, chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.compact }, flex: { flex: 1 },
-  preview: { width: '100%', height: 210, borderRadius: radius.large }, scanStatus: { flexDirection: 'row', alignItems: 'center', gap: spacing.small }, memo: { minHeight: 100, textAlignVertical: 'top' }, saveButton: { minHeight: 60 }, pressed: { opacity: 0.65 },
+  preview: { width: '100%', height: 210, borderRadius: radius.large }, scanStatus: { flexDirection: 'row', alignItems: 'center', gap: spacing.small }, memo: { minHeight: 100, textAlignVertical: 'top' }, pressed: { opacity: 0.65 },
 });

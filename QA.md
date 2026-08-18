@@ -1,6 +1,6 @@
 # QA
 
-Verification date: 2026-08-14. Primary native device: iPhone 17 Pro simulator, iOS 26.5. Mobile web was additionally verified at 390×844 and 375×667.
+Verification date: 2026-08-18. Primary native device: iPhone 17 Pro simulator, iOS 26.5. Mobile web was additionally verified at 390×844 and 375×667.
 
 ## Automated results
 
@@ -13,6 +13,10 @@ Verification date: 2026-08-14. Primary native device: iPhone 17 Pro simulator, i
 | iOS Expo/Hermes export | Pass |
 | CocoaPods install | Pass |
 | Signed Xcode Debug simulator build | Pass |
+| IA remediation typecheck | Pass (`tsc --noEmit`) |
+| IA remediation ESLint | Pass |
+| IA remediation unit tests | Pass: 4 files, 15 tests |
+| IA remediation web export | Pass with `/beadfold` base URL |
 
 Tests cover recipe determinism, history/gear explanation and water/time invariants; honest unknown-roast fallback; timestamp projection; pause/resume; skip; Taste threshold/aggregation; exclusion of unknown roast from Taste Profile; nullable advanced values; and core color contrast.
 
@@ -45,6 +49,16 @@ Heuristic gate: 9.2/10 overall. Reading 9.2, writing 9.1, updating 9.2, deleting
 - Created a Bean on the deployed site, refreshed its generated `/bean/:id` URL directly, and verified the same persisted detail screen returned with no console errors through the Pages `404.html` SPA fallback.
 
 ## UX/UI redesign verification
+
+### 2026-08-18 IA and task-control pass
+
+- Confirmed the persistent navigation contains only the four IA domains: Home, Journal, Collection, and Profile. The central control is a labelled **추가** action, not a selected tab or a route.
+- Confirmed Global Add directly presents Bean intake, contextual Home Brew (including a Bean choice when necessary), and Cafe Cup recording; no Journal → Add detour remains.
+- Confirmed Collection now contains only durable items (Beans, Recipes, Gear); Cafe visits stay in Journal as Cup records.
+- Confirmed Compare begins with explicitly selecting two compatible home-brew Cups and presents a fixed, disabled-until-ready comparison CTA instead of a misleading disabled top-level button.
+- Confirmed Bean, Cafe Cup, Cup feedback, and Manual Recipe use task headers and bottom-fixed completion CTA bars. Close/back navigation invokes a discard confirmation only after input changes; completed saves permit navigation without a duplicate confirmation.
+- Confirmed Home reads the stored onboarding goal and prioritizes an unfinished Cup, a repeat-brew action, or a taste-profile action before general history.
+- Build-only verification was used for this pass because no local web listener was available at review time; production visual verification is repeated after GitHub Pages deploy.
 
 - Replaced text glyph navigation with labeled native symbols and a persistent shared five-item navigation shell.
 - Removed root, tab, and modal stack transition animations.

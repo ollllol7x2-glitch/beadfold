@@ -11,7 +11,6 @@ export default function TabLayout() {
     }}>
       <Tabs.Screen name="index" options={{ title: '홈' }} />
       <Tabs.Screen name="journal" options={{ title: '기록' }} />
-      <Tabs.Screen name="add" options={{ title: '추가' }} />
       <Tabs.Screen name="collection" options={{ title: '보관함' }} />
       <Tabs.Screen name="profile" options={{ title: '프로필' }} />
     </Tabs>

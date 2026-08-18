@@ -25,7 +25,7 @@ export default function BrewScreen() {
   const previousStep = useRef(-1);
   const [error, setError] = useState('');
   const [hapticsEnabled, setHapticsEnabled] = useState(false);
-  const [confirm, setConfirm] = useState<'leave' | 'skip' | null>(null);
+  const [confirm, setConfirm] = useState<'pause' | 'leave' | 'skip' | null>(null);
 
   const load = useCallback(async () => {
     if (sessionId) setSession(await getBrewSession(db, sessionId));
@@ -101,7 +101,8 @@ export default function BrewScreen() {
   if (phase !== 'active') {
     return (
       <Screen scroll={accessibilityScroll} showNavigation={false} contentContainerStyle={[styles.shell, compact && styles.shellCompact]}>
-        <BrewTopBar title="추출 준비" subtitle={`1 / ${session.recipeSnapshot.steps.length}`} onLeave={() => void leave()} />
+        <ConfirmDialog visible={confirm === 'pause'} title="준비를 잠시 멈출까요?" body="지금까지의 준비 상태는 홈에서 이어갈 수 있어요." confirmLabel="나가기" onCancel={() => setConfirm(null)} onConfirm={() => { setConfirm(null); void leave(); }} />
+        <BrewTopBar title="추출 준비" subtitle={`1 / ${session.recipeSnapshot.steps.length}`} onLeave={() => setConfirm('pause')} />
         {phase === 'countdown' ? (
           <CountdownState value={countdown ?? 0} />
         ) : (
@@ -126,11 +127,12 @@ export default function BrewScreen() {
   return (
     <Screen scroll={accessibilityScroll} showNavigation={false} contentContainerStyle={[styles.shell, compact && styles.shellCompact]}>
       <ConfirmDialog visible={confirm === 'skip'} title="벌써 다음 단계로 갈까요?" body={`${formatDuration(projection.stepRemainingMs)}가 남아 있어요.`} confirmLabel="다음 단계" onCancel={() => setConfirm(null)} onConfirm={() => { setConfirm(null); const nextSession = skipStep({ ...session, stepIndex: projection.stepIndex }); void persist(nextSession); }} />
+      <ConfirmDialog visible={confirm === 'pause'} title="브루잉을 잠시 멈출까요?" body="타이머를 멈추고 홈에서 이어할 수 있어요." confirmLabel="잠시 멈추기" onCancel={() => setConfirm(null)} onConfirm={() => { setConfirm(null); void leave(); }} />
       <ConfirmDialog visible={confirm === 'leave'} title="브루잉을 그만둘까요?" body="컵 기록은 만들지 않아요." confirmLabel="그만두기" destructive onCancel={() => setConfirm(null)} onConfirm={() => { setConfirm(null); void abandonBrew(db, session.id).then(() => router.replace('/(tabs)')); }} />
       <BrewTopBar
         title={projection.step.name}
         subtitle={`${projection.stepIndex + 1} / ${session.recipeSnapshot.steps.length}`}
-        onLeave={() => void leave()}
+        onLeave={() => setConfirm('pause')}
       />
 
       {error ? <Text accessibilityRole="alert" color={colors.error}>{error}</Text> : null}

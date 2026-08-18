@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { Button, Card, EmptyState, Icon, Screen, Text, TopBar } from '@/components/ui';
+import { BottomActionBar, Button, Card, EmptyState, Icon, Screen, Text, TopBar } from '@/components/ui';
 import { getBean, listCatalogGear, listCups, listUserGear, saveRecipe, startBrew, trackEvent } from '@/database/repository';
 import { generateGuidedRecipe } from '@/domain/recipeEngine';
 import type { BeanLot, Gear, Recipe } from '@/domain/types';
@@ -48,7 +48,7 @@ export default function GuidedRecipeScreen() {
   const gearNames = ['grinder', 'dripper'].map((category) => gear.find((item) => item.category === category)?.name).filter(Boolean);
 
   return (
-    <Screen contentContainerStyle={styles.screen}>
+    <Screen contentContainerStyle={styles.screen} footer={<BottomActionBar primaryLabel="안내 시작하기" onPrimaryPress={() => void begin()} secondaryLabel="직접 조절" onSecondaryPress={() => router.push(`/recipe/manual?beanId=${bean.id}`)} />}>
       <TopBar title="오늘의 레시피" backLabel="원두" />
 
       <Pressable accessibilityRole="button" accessibilityLabel={`${bean.name} 원두 정보 보기`} onPress={() => router.push(`/bean/${bean.id}`)} style={styles.beanStrip}>
@@ -82,7 +82,6 @@ export default function GuidedRecipeScreen() {
 
       <Pressable accessibilityRole="button" accessibilityLabel={`오늘 쓸 장비, ${gearNames.join(', ') || '기본 장비'}, 변경하기`} onPress={() => router.push('/gear')} style={styles.gearRow}><Icon name="dial.medium" size={21} color={colors.espresso} /><View style={styles.flex}><Text variant="label">오늘 쓸 장비</Text><Text variant="caption" color={colors.neutral600}>{gearNames.join(' · ') || '기본 장비'}</Text></View><Icon name="chevron.right" size={16} color={colors.neutral400} /></Pressable>
 
-      <View style={styles.actions}><Button label="안내 시작하기" icon="play.fill" onPress={() => void begin()} /><Button label="직접 조절" variant="tertiary" icon="slider.horizontal.3" onPress={() => router.push(`/recipe/manual?beanId=${bean.id}`)} /></View>
     </Screen>
   );
 }
@@ -123,5 +122,4 @@ const styles = StyleSheet.create({
   disclosure: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: spacing.small, paddingHorizontal: spacing.small, borderRadius: radius.medium, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200 },
   helpIcon: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.creamDeep, alignItems: 'center', justifyContent: 'center' },
   gearRow: { minHeight: 66, flexDirection: 'row', alignItems: 'center', gap: spacing.small, paddingVertical: spacing.compact, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.neutral200 },
-  actions: { gap: spacing.compact },
 });

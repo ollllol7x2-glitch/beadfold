@@ -2,12 +2,13 @@ import { useCallback, useState } from 'react';
 import { Image, ImageBackground, Pressable, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { BrandMark, Button, Card, EmptyState, Icon, IconButton, Screen, SectionTitle, Text } from '@/components/ui';
+import { BottomSheet, BrandMark, Button, Card, EmptyState, Icon, IconButton, Screen, SectionTitle, Text } from '@/components/ui';
 import { getInterruptedBrew, getSetting, listBeans, listCups } from '@/database/repository';
 import { localizedFlavor, satisfactionLabel, type BeanLot, type BrewSession, type Cup } from '@/domain/types';
 import { colors, radius, shadows, spacing } from '@/design-system/tokens';
 
 type Experience = 'beginner' | 'casual' | 'advanced';
+type Goal = 'guided' | 'repeat' | 'explore';
 
 export default function HomeScreen() {
   const db = useSQLiteContext();
@@ -15,11 +16,13 @@ export default function HomeScreen() {
   const [cups, setCups] = useState<Cup[]>([]);
   const [interrupted, setInterrupted] = useState<BrewSession | null>(null);
   const [experience, setExperience] = useState<Experience>('beginner');
+  const [goal, setGoal] = useState<Goal>('guided');
+  const [beanPickerOpen, setBeanPickerOpen] = useState(false);
 
   useFocusEffect(useCallback(() => {
     let active = true;
-    Promise.all([listBeans(db), listCups(db), getInterruptedBrew(db), getSetting(db, 'experience_level', 'beginner')]).then(([nextBeans, nextCups, nextBrew, level]) => {
-      if (active) { setBeans(nextBeans); setCups(nextCups); setInterrupted(nextBrew); setExperience(level as Experience); }
+    Promise.all([listBeans(db), listCups(db), getInterruptedBrew(db), getSetting(db, 'experience_level', 'beginner'), getSetting(db, 'onboarding_goal', 'guided')]).then(([nextBeans, nextCups, nextBrew, level, savedGoal]) => {
+      if (active) { setBeans(nextBeans); setCups(nextCups); setInterrupted(nextBrew); setExperience(level as Experience); setGoal(savedGoal as Goal); }
     });
     return () => { active = false; };
   }, [db]));
@@ -28,6 +31,8 @@ export default function HomeScreen() {
   const hour = new Date().getHours();
   const timeGreeting = hour < 11 ? '좋은 아침이에요' : hour < 17 ? '좋은 오후예요' : '좋은 저녁이에요';
   const greeting = experience === 'beginner' ? '첫 한 잔, 함께 시작해볼까요?' : experience === 'casual' ? '오늘은 가볍게 한 잔 내려볼까요?' : '오늘의 변수를 정해볼까요?';
+  const pendingCup = cups.find((cup) => cup.kind === 'home' && !cup.satisfaction);
+  const lastHomeCup = cups.find((cup) => cup.kind === 'home' && cup.beanId);
 
   return (
     <Screen showNavigation contentContainerStyle={styles.screen}>
@@ -65,7 +70,7 @@ export default function HomeScreen() {
           <View style={styles.heroActions}>
             <Button label="이 원두로 내리기" icon="waterbottle.fill" onPress={() => router.push(`/recipe/guided?beanId=${today.id}`)} style={styles.primaryBrew} />
             <View style={styles.duration}><Icon name="clock" size={14} color={colors.neutral600} /><Text variant="caption" color={colors.neutral600}>약 3분 · 단계별 안내</Text></View>
-            <Button label="다른 원두 고르기" variant="tertiary" icon="arrow.triangle.2.circlepath" onPress={() => router.push('/(tabs)/collection')} />
+            {beans.length > 1 ? <Button label="다른 원두 고르기" variant="tertiary" icon="arrow.triangle.2.circlepath" onPress={() => setBeanPickerOpen(true)} /> : null}
           </View>
         </View>
       ) : (
@@ -74,10 +79,17 @@ export default function HomeScreen() {
 
       {experience === 'beginner' ? <BeginnerPath hasBean={Boolean(today)} cupCount={cups.length} /> : null}
 
+      {pendingCup ? <NextAction icon="heart.fill" eyebrow="아직 남은 한 단계" title="방금 마신 커피는 어땠나요?" body="첫 느낌만 골라도 다음 추천에 반영돼요." label="맛 기록 남기기" onPress={() => router.push(`/record-cup/${pendingCup.id}`)} /> : goal === 'repeat' && lastHomeCup?.beanId ? <NextAction icon="arrow.clockwise" eyebrow="내 취향대로 반복하기" title="최근 레시피를 다시 내려볼까요?" body={`${lastHomeCup.beanName}로 남긴 경험을 기준으로 시작해요.`} label="같은 원두로 내리기" onPress={() => router.push(`/recipe/guided?beanId=${lastHomeCup.beanId}`)} /> : goal === 'explore' ? <NextAction icon="sparkles" eyebrow="내 취향 찾기" title="맛 기록이 쌓일수록 더 또렷해져요" body="좋았던 커피에 느낌을 남기면 취향 변화를 보여드려요." label="내 취향 보기" onPress={() => router.push('/taste-profile')} /> : null}
+
       <SectionTitle title="최근에 내린 커피" action={<Button label="전체 보기" variant="tertiary" onPress={() => router.push('/(tabs)/journal')} />} />
       {cups.length ? <View style={styles.cupList}>{cups.slice(0, 3).map((cup, index) => <CupRow key={cup.id} cup={cup} imageOffset={index} />)}</View> : <Card tone="tinted"><View style={styles.emptyCup}><Icon name="cup.and.saucer" size={30} color={colors.espresso} /><View style={styles.flex}><Text variant="title3">아직 기록이 없어요</Text><Text color={colors.neutral800}>첫 브루잉이 끝나면 여기에 바로 나타나요.</Text></View></View></Card>}
+      <BottomSheet visible={beanPickerOpen} title="어떤 원두로 내릴까요?" onClose={() => setBeanPickerOpen(false)}><View style={styles.pickerList}>{beans.map((bean) => <Pressable key={bean.id} accessibilityRole="button" accessibilityLabel={`${bean.name}로 내리기`} onPress={() => { setBeanPickerOpen(false); router.push(`/recipe/guided?beanId=${bean.id}`); }} style={styles.pickerItem}><View style={styles.pickerIcon}><Icon name="leaf.fill" size={22} /></View><View style={styles.flex}><Text variant="title3">{bean.name}</Text><Text variant="caption" color={colors.neutral800}>{bean.remainingWeightG}g 남음{bean.roaster ? ` · ${bean.roaster}` : ''}</Text></View><Icon name="chevron.right" size={18} color={colors.neutral600} /></Pressable>)}</View></BottomSheet>
     </Screen>
   );
+}
+
+function NextAction({ icon, eyebrow, title, body, label, onPress }: { icon: Parameters<typeof Icon>[0]['name']; eyebrow: string; title: string; body: string; label: string; onPress: () => void }) {
+  return <Card tone="tinted" style={styles.nextAction}><View style={styles.nextIcon}><Icon name={icon} size={22} color={colors.espresso} /></View><View style={styles.flex}><Text variant="caption" color={colors.cocoa}>{eyebrow}</Text><Text variant="title3">{title}</Text><Text variant="caption" color={colors.neutral800}>{body}</Text></View><Button label={label} variant="tertiary" onPress={onPress} style={styles.nextButton} /></Card>;
 }
 
 function BeginnerPath({ hasBean, cupCount }: { hasBean: boolean; cupCount: number }) {
@@ -143,5 +155,11 @@ const styles = StyleSheet.create({
   thumbnailImage: { width: '100%', height: '100%' },
   rating: { width: 66, alignItems: 'center', gap: 4 },
   emptyCup: { flexDirection: 'row', alignItems: 'center', gap: spacing.default },
+  nextAction: { flexDirection: 'row', alignItems: 'center', gap: spacing.small, padding: spacing.small },
+  nextIcon: { width: 46, height: 46, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white },
+  nextButton: { alignSelf: 'center' },
+  pickerList: { gap: spacing.compact, paddingBottom: spacing.small },
+  pickerItem: { minHeight: 70, flexDirection: 'row', alignItems: 'center', gap: spacing.small, padding: spacing.small, borderRadius: radius.large, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200 },
+  pickerIcon: { width: 46, height: 46, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.creamDeep },
   pressed: { opacity: 0.68 },
 });

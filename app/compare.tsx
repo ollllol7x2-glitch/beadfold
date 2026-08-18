@@ -10,20 +10,21 @@ import { colors, radius, spacing } from '@/design-system/tokens';
 const tasteLabels: Record<keyof TasteValues, string> = { acidity: '산미', sweetness: '단맛', body: '질감', bitterness: '쓴맛', aroma: '향', aftertaste: '여운', balance: '균형' };
 
 export default function CompareScreen() {
-  const { beanId } = useLocalSearchParams<{ beanId?: string }>();
+  const { beanId, cupIds } = useLocalSearchParams<{ beanId?: string; cupIds?: string }>();
   const db = useSQLiteContext();
   const [cups, setCups] = useState<Cup[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   useFocusEffect(useCallback(() => {
     let active = true;
-    void trackEvent(db, 'compare_started', { bean_id: beanId ?? null });
+    const requestedIds = cupIds?.split(',').filter(Boolean) ?? [];
+    void trackEvent(db, 'compare_started', { bean_id: beanId ?? null, selected_count: requestedIds.length });
     void listCups(db, beanId ? { beanId } : undefined).then((all) => {
       const home = all.filter((cup) => cup.kind === 'home' && cup.beanId);
-      const target = beanId ? home : home.filter((cup) => home.filter((other) => other.beanId === cup.beanId).length >= 2);
-      if (active) { setCups(target); setSelected(target.slice(0, 2).map((cup) => cup.id)); }
+      const target = requestedIds.length ? home.filter((cup) => requestedIds.includes(cup.id)) : beanId ? home : home.filter((cup) => home.filter((other) => other.beanId === cup.beanId).length >= 2);
+      if (active) { setCups(target); setSelected(requestedIds.length ? target.map((cup) => cup.id).slice(0, 2) : target.slice(0, 2).map((cup) => cup.id)); }
     });
     return () => { active = false; };
-  }, [beanId, db]));
+  }, [beanId, cupIds, db]));
   const chosen = selected.map((id) => cups.find((cup) => cup.id === id)).filter(Boolean) as Cup[];
   useEffect(() => { if (chosen.length === 2) void trackEvent(db, 'compare_completed', { bean_id: beanId ?? null }); }, [beanId, chosen.length, db]);
   if (cups.length < 2) return <Screen><PageHeader title="두 잔 비교" description="같은 원두로 내린 커피를 나란히 살펴봐요." backLabel="기록" /><EmptyState title="한 잔이 더 필요해요" body="같은 원두로 두 번 내리면 추출값과 맛의 차이를 볼 수 있어요." icon="arrow.left.arrow.right" /></Screen>;

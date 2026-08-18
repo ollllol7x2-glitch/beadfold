@@ -3,11 +3,12 @@ import { Image, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import * as ImagePicker from 'expo-image-picker';
-import { AppNavigation, Button, Chip, Field, PageHeader, Screen, Text } from '@/components/ui';
+import { BottomActionBar, Button, Chip, Field, Screen, TaskHeader, Text } from '@/components/ui';
 import { createCafeCup, deleteCup, getCup, updateCafeCup } from '@/database/repository';
 import { localizedFlavor, satisfactionLabel, type Satisfaction } from '@/domain/types';
 import { colors, spacing } from '@/design-system/tokens';
 import { useFeedback } from '@/components/feedback';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 
 const flavors = ['Floral', 'Fruity', 'Juicy', 'Sweet', 'Clean', 'Creamy', 'Nutty', 'Roasty', 'Funky'];
 
@@ -27,6 +28,10 @@ export default function RecordCafeScreen() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(Boolean(cupId));
   const [saving, setSaving] = useState(false);
+  const [baseline, setBaseline] = useState('');
+  const formSnapshot = JSON.stringify({ cafeName, beanName, drinkName, satisfaction, tags, memo, imageUri });
+  const isDirty = cupId ? Boolean(baseline) && baseline !== formSnapshot : Boolean(cafeName || beanName || drinkName || satisfaction || tags.length || memo || imageUri);
+  const { requestExit, allowExit, exitConfirmation } = useUnsavedChangesGuard(isDirty);
 
   useEffect(() => {
     if (!cupId) return;
@@ -45,6 +50,7 @@ export default function RecordCafeScreen() {
       setTags(cup.flavorTags);
       setMemo(cup.memo);
       setImageUri(cup.imageUri);
+      setBaseline(JSON.stringify({ cafeName: cup.cafeName, beanName: cup.beanName === cup.drinkName ? '' : cup.beanName, drinkName: cup.drinkName, satisfaction: cup.satisfaction, tags: cup.flavorTags, memo: cup.memo, imageUri: cup.imageUri }));
       setLoading(false);
     });
     return () => { active = false; };
@@ -84,6 +90,7 @@ export default function RecordCafeScreen() {
           },
         });
       }
+      allowExit();
       router.replace('/(tabs)/journal');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '카페 기록을 저장하지 못했어요.');
@@ -105,13 +112,8 @@ export default function RecordCafeScreen() {
   if (loading) return <Screen showNavigation={false}><Text>카페 기록을 불러오고 있어요.</Text></Screen>;
 
   return (
-    <View style={styles.shell}>
-      <Screen showNavigation={false}>
-        <PageHeader
-          title={cupId ? '카페 기록 수정' : '카페에서 마신 커피'}
-          description={cupId ? '바뀐 내용만 고쳐주세요.' : '기억하고 싶은 것만 간단히 남겨보세요.'}
-          action={<Button label="닫기" variant="tertiary" onPress={() => router.back()} />}
-        />
+      <Screen showNavigation={false} footer={<BottomActionBar primaryLabel={cupId ? '변경사항 저장' : '기록 저장'} primaryLoading={saving} onPrimaryPress={() => void save()} />}>
+        <TaskHeader title={cupId ? '카페 기록 수정' : '카페에서 마신 커피'} description={cupId ? '바뀐 내용만 고쳐주세요.' : '기억하고 싶은 것만 간단히 남겨보세요.'} onClose={() => requestExit(() => router.back())} />
         {error ? <Text accessibilityRole="alert" color={colors.error}>{error}</Text> : null}
         {imageUri ? <Image source={{ uri: imageUri }} style={styles.photo} accessibilityLabel="커피 사진" /> : null}
         <Button label={imageUri ? '사진 바꾸기' : '사진 추가'} variant="secondary" icon="camera.fill" onPress={() => void pickImage()} />
@@ -142,15 +144,12 @@ export default function RecordCafeScreen() {
           {flavors.map((tag) => <Chip key={tag} label={localizedFlavor(tag)} selected={tags.includes(tag)} onPress={() => setTags((current) => current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag])} />)}
         </View>
         <Field label="한 줄 메모" value={memo} onChangeText={setMemo} multiline style={styles.memo} />
-        <Button label={cupId ? '변경사항 저장' : '기록 저장'} loading={saving} onPress={() => void save()} />
+        {exitConfirmation}
       </Screen>
-      <AppNavigation />
-    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  shell: { flex: 1, backgroundColor: colors.cream },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.compact },
   photo: { width: '100%', height: 220, borderRadius: 18 },
   memo: { minHeight: 120, textAlignVertical: 'top' },

@@ -3,11 +3,12 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import * as ImagePicker from 'expo-image-picker';
-import { AppNavigation, Button, Card, Chip, Field, Icon, PageHeader, Screen, Text } from '@/components/ui';
+import { BottomActionBar, Button, Card, Chip, Field, Icon, Screen, TaskHeader, Text } from '@/components/ui';
 import { getCup, recordCupFeedback } from '@/database/repository';
 import { emptyTasteValues, satisfactionLabel, type Cup, type Satisfaction, type TasteValues } from '@/domain/types';
 import { colors, spacing } from '@/design-system/tokens';
 import { useFeedback } from '@/components/feedback';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 
 const flavors = ['Floral', 'Fruity', 'Juicy', 'Sweet', 'Clean', 'Creamy', 'Nutty', 'Roasty', 'Funky'];
 const flavorLabels: Record<string, string> = { Floral: '꽃향', Fruity: '과일', Juicy: '과즙', Sweet: '달콤함', Clean: '깔끔함', Creamy: '부드러움', Nutty: '고소함', Roasty: '구수함', Funky: '발효향' };
@@ -26,8 +27,12 @@ export default function RecordCupScreen() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [baseline, setBaseline] = useState('');
+  const formSnapshot = JSON.stringify({ satisfaction, tags, taste, memo, imageUri });
+  const isDirty = Boolean(baseline) && baseline !== formSnapshot;
+  const { requestExit, allowExit, exitConfirmation } = useUnsavedChangesGuard(isDirty);
 
-  useFocusEffect(useCallback(() => { if (!cupId) return; let active = true; getCup(db, cupId).then((value) => { if (active && value) { setCup(value); setSatisfaction(value.satisfaction); setTags(value.flavorTags); setTaste(value.taste); setMemo(value.memo); setImageUri(value.imageUri); } }); return () => { active = false; }; }, [cupId, db]));
+  useFocusEffect(useCallback(() => { if (!cupId) return; let active = true; getCup(db, cupId).then((value) => { if (active && value) { setCup(value); setSatisfaction(value.satisfaction); setTags(value.flavorTags); setTaste(value.taste); setMemo(value.memo); setImageUri(value.imageUri); setBaseline(JSON.stringify({ satisfaction: value.satisfaction, tags: value.flavorTags, taste: value.taste, memo: value.memo, imageUri: value.imageUri })); } }); return () => { active = false; }; }, [cupId, db]));
   const toggleTag = (tag: string) => setTags((current) => current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]);
   const save = async () => {
     if (!cup || !satisfaction) return setError('이 컵이 어땠는지 하나를 선택해주세요.');
@@ -35,6 +40,7 @@ export default function RecordCupScreen() {
     try {
       await recordCupFeedback(db, cup.id, { satisfaction, flavorTags: tags, taste, memo: memo.trim(), imageUri });
       showFeedback(cup.satisfaction ? '맛 기록을 수정했어요.' : '맛 기록을 저장했어요.');
+      allowExit();
       router.replace('/(tabs)/journal');
     } finally {
       setSaving(false);
@@ -44,8 +50,8 @@ export default function RecordCupScreen() {
 
   if (!cup) return <Screen><Text>컵 기록을 불러오고 있어요…</Text></Screen>;
   return (
-    <View style={styles.shell}><Screen showNavigation={false}>
-      <PageHeader title="이 커피는 어땠나요?" description="첫 느낌만 골라도 충분해요." action={<Button label="나중에" variant="tertiary" onPress={() => router.replace('/(tabs)/journal')} />} />
+    <Screen showNavigation={false} footer={<BottomActionBar primaryLabel={cup.satisfaction ? '변경사항 저장' : '맛 기록 저장'} primaryLoading={saving} onPrimaryPress={() => void save()} />}>
+      <TaskHeader title="이 커피는 어땠나요?" description="첫 느낌만 골라도 충분해요." closeLabel="나중에" onClose={() => requestExit(() => router.replace('/(tabs)/journal'))} />
       {error ? <Text accessibilityRole="alert" color={colors.error}>{error}</Text> : null}
       <View style={styles.ratings}>{(['not_for_me', 'good', 'loved'] as Satisfaction[]).map((value) => <View key={value} style={styles.ratingChoice}><View style={[styles.ratingIcon, satisfaction === value && styles.ratingIconSelected]}><Icon name={value === 'loved' ? 'heart.fill' : value === 'good' ? 'face.smiling' : 'hand.thumbsdown.fill'} size={25} color={satisfaction === value ? colors.cream : colors.espresso} /></View><Chip label={satisfactionLabel[value]} selected={satisfaction === value} onPress={() => { setSatisfaction(value); setError(''); }} /></View>)}</View>
       <Text variant="title2">어떤 맛이 떠올랐나요?</Text>
@@ -55,9 +61,9 @@ export default function RecordCupScreen() {
       {imageUri ? <Image source={{ uri: imageUri }} style={styles.photo} accessibilityLabel="이 커피의 사진" /> : null}
       <Button label={imageUri ? '사진 바꾸기' : '사진 추가'} variant="secondary" icon="camera.fill" onPress={() => void pickImage()} />
       <Field label="한 줄 메모" value={memo} onChangeText={setMemo} multiline placeholder="다음에는 물 온도를 조금 낮춰보기" style={styles.memo} />
-      <Button label={cup.satisfaction ? '변경사항 저장' : '맛 기록 저장'} loading={saving} onPress={() => void save()} />
-    </Screen><AppNavigation /></View>
+      {exitConfirmation}
+    </Screen>
   );
 }
 
-const styles = StyleSheet.create({ shell: { flex: 1, backgroundColor: colors.cream }, flex: { flex: 1 }, ratings: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.compact }, ratingChoice: { flex: 1, minWidth: 100, alignItems: 'center', gap: spacing.compact }, ratingIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.creamDeep, alignItems: 'center', justifyContent: 'center' }, ratingIconSelected: { backgroundColor: colors.espresso }, disclosure: { minHeight: 70, flexDirection: 'row', alignItems: 'center', gap: spacing.small }, tasteRow: { gap: spacing.compact, paddingTop: spacing.small, borderTopWidth: 1, borderTopColor: colors.neutral200 }, photo: { width: '100%', height: 220, borderRadius: 18 }, memo: { minHeight: 140, textAlignVertical: 'top' } });
+const styles = StyleSheet.create({ flex: { flex: 1 }, ratings: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.compact }, ratingChoice: { flex: 1, minWidth: 100, alignItems: 'center', gap: spacing.compact }, ratingIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.creamDeep, alignItems: 'center', justifyContent: 'center' }, ratingIconSelected: { backgroundColor: colors.espresso }, disclosure: { minHeight: 70, flexDirection: 'row', alignItems: 'center', gap: spacing.small }, tasteRow: { gap: spacing.compact, paddingTop: spacing.small, borderTopWidth: 1, borderTopColor: colors.neutral200 }, photo: { width: '100%', height: 220, borderRadius: 18 }, memo: { minHeight: 140, textAlignVertical: 'top' } });

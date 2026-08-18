@@ -14,9 +14,11 @@ The app is local-first. Screens read and mutate real SQLite rows through `src/da
 
 ## Navigation and experience shell
 
-The native tab bar is hidden and a shared `AppNavigation` shell is rendered by `Screen`. Home, Journal, the global Add action, Collection, and Profile remain available on non-immersive nested routes such as Bean, Recipe, Gear, Cup, Compare, Taste Profile, and Settings. Active Brew hides global navigation on purpose and exposes both **나가기** and **일시정지**.
+The native tab bar is hidden and a shared `AppNavigation` shell is rendered by `Screen`. Its four persistent destinations are **Home, Journal, Collection, Profile**. The centered **추가** control is deliberately a button—not a fifth tab—and opens a contextual action sheet for Add Bean, Start Home Brew, and Record Cafe Cup. Home Brew chooses a Bean in-place and opens Guided Recipe directly.
 
-Root, tab, and modal transitions use `animation: none` to remove the former clicky stack motion. Onboarding stores `experience_level` and `onboarding_goal`; Home uses the experience level to change guidance density without creating separate feature sets.
+Informational destinations retain the persistent shell. Creation and editing tasks (Bean, Cafe Cup, Cup feedback, Manual Recipe) intentionally hide it, use a compact task header, keep the completion CTA below the scroll region, and confirm before discarding unsaved work. Active Brew hides global navigation on purpose and confirms whether to pause before leaving.
+
+Root, tab, and modal transitions use `animation: none` to remove the former clicky stack motion. Onboarding stores `experience_level` and `onboarding_goal`; Home uses both to change the first actionable prompt without creating separate feature sets.
 
 ## Core decisions
 
@@ -32,7 +34,7 @@ Root, tab, and modal transitions use `animation: none` to remove the former clic
 
 ## Navigation
 
-The root Stack owns onboarding and detail/modal routes. Tabs own Home, Journal, Add, Collection, and Profile. Onboarding is persisted once in SQLite; future launches redirect to tabs. Every required route has an explicit empty/error state or actionable fallback.
+The root Stack owns onboarding and detail/modal routes. Tabs own Home, Journal, Collection, and Profile; Global Add is an overlay action rather than a route. Onboarding is persisted once in SQLite; future launches redirect to tabs. Every required route has an explicit empty/error state or actionable fallback.
 
 ## Failure behavior
 
