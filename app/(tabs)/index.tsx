@@ -27,19 +27,31 @@ export default function HomeScreen() {
     return () => { active = false; };
   }, [db]));
 
-  const today = beans.find((bean) => bean.state === 'opened') ?? beans[0];
+  // "오늘"이라는 모호한 표현 대신, 실제 선택 기준을 화면에 드러낸다.
+  const openedBean = beans.find((bean) => bean.state === 'opened');
+  const today = openedBean ?? beans[0];
+  const todayCriterion = openedBean ? '개봉한 원두 중 최근에 사용한 원두' : '최근에 추가한 원두';
   const hour = new Date().getHours();
   const timeGreeting = hour < 11 ? '좋은 아침이에요' : hour < 17 ? '좋은 오후예요' : '좋은 저녁이에요';
   const greeting = experience === 'beginner' ? '첫 한 잔, 함께 시작해볼까요?' : experience === 'casual' ? '오늘은 가볍게 한 잔 내려볼까요?' : '오늘의 변수를 정해볼까요?';
   const pendingCup = cups.find((cup) => cup.kind === 'home' && !cup.satisfaction);
   const lastHomeCup = cups.find((cup) => cup.kind === 'home' && cup.beanId);
+  const noticeCount = Number(Boolean(interrupted))
+    + Math.min(3, cups.filter((cup) => cup.kind === 'home' && !cup.satisfaction).length)
+    + Math.min(3, beans.filter((bean) => bean.remainingWeightG > 0 && bean.remainingWeightG <= 30 && bean.state !== 'finished').length);
+
+  const header = (
+    <View style={styles.brandRow}>
+      <View style={styles.wordmark}><BrandMark size={26} /><Text variant="label" style={styles.wordmarkText}>BEANFOLD</Text></View>
+      <View style={styles.notificationWrap}>
+        <IconButton name="bell" label={noticeCount ? `알림 ${noticeCount}개` : '알림'} onPress={() => router.push('/notifications' as never)} />
+        {noticeCount ? <View pointerEvents="none" style={styles.notificationBadge}><Text variant="caption" color={colors.cream} style={styles.notificationBadgeText}>{noticeCount > 9 ? '9+' : noticeCount}</Text></View> : null}
+      </View>
+    </View>
+  );
 
   return (
-    <Screen showNavigation contentContainerStyle={styles.screen}>
-      <View style={styles.brandRow}>
-        <View style={styles.wordmark}><BrandMark size={26} /><Text variant="label" style={styles.wordmarkText}>BEANFOLD</Text></View>
-        <IconButton name="bell" label="알림" onPress={() => router.push('/notifications' as never)} />
-      </View>
+    <Screen showNavigation header={header} contentContainerStyle={styles.screen}>
 
       <View style={styles.greeting}>
         <Text variant="title1" accessibilityRole="header">{timeGreeting}</Text>
@@ -57,18 +69,20 @@ export default function HomeScreen() {
       {today ? (
         <View style={styles.heroWrap}>
           <Pressable accessibilityRole="button" accessibilityLabel={`${today.name} 원두 상세 보기`} onPress={() => router.push(`/bean/${today.id}`)}>
-            <ImageBackground source={today.imageUri ? { uri: today.imageUri } : require('../../assets/visuals/bean-still-life.png')} resizeMode="cover" style={styles.hero} imageStyle={styles.heroImage}>
-              <View style={styles.heroShade} />
-              <View style={styles.heroCopy}>
-                <Text variant="label" color={colors.creamDeep}>오늘의 원두</Text>
-                <Text variant="title1" color={colors.cream} style={styles.heroTitle}>{today.name}</Text>
-                <Text color={colors.cream}>{today.tastingNotes.slice(0, 3).join(' · ') || [today.country, today.process].filter(Boolean).join(' · ')}</Text>
-                <View style={styles.remaining}><Icon name="leaf.fill" size={14} color={colors.cream} /><Text variant="label" color={colors.cream}>남은 양 {today.remainingWeightG}g</Text></View>
+            {today.imageUri ? (
+              <ImageBackground source={{ uri: today.imageUri }} resizeMode="cover" style={styles.hero} imageStyle={styles.heroImage}>
+                <View style={styles.heroShade} />
+                <BeanHeroCopy bean={today} criterion={todayCriterion} />
+              </ImageBackground>
+            ) : (
+              <View style={[styles.hero, styles.heroFallback]}>
+                <View style={styles.fallbackRing} /><View style={styles.fallbackBean}><Icon name="leaf.fill" size={62} color={colors.cream} /></View>
+                <BeanHeroCopy bean={today} criterion={todayCriterion} />
               </View>
-            </ImageBackground>
+            )}
           </Pressable>
           <View style={styles.heroActions}>
-            <Button label="이 원두로 내리기" icon="waterbottle.fill" onPress={() => router.push(`/recipe/guided?beanId=${today.id}`)} style={styles.primaryBrew} />
+            <Button label="이 원두로 내리기" icon="cup.and.heat.waves.fill" onPress={() => router.push(`/recipe/guided?beanId=${today.id}`)} style={styles.primaryBrew} />
             <View style={styles.duration}><Icon name="clock" size={14} color={colors.neutral600} /><Text variant="caption" color={colors.neutral600}>약 3분 · 단계별 안내</Text></View>
             {beans.length > 1 ? <Button label="다른 원두 고르기" variant="tertiary" icon="arrow.triangle.2.circlepath" onPress={() => setBeanPickerOpen(true)} /> : null}
           </View>
@@ -77,7 +91,7 @@ export default function HomeScreen() {
         <EmptyState title="먼저 원두를 알려주세요" body="이름과 남은 양만 입력해도 바로 시작할 수 있어요." icon="leaf.fill" action={<Button label="첫 원두 추가하기" icon="plus" onPress={() => router.push('/add-bean')} />} />
       )}
 
-      {experience === 'beginner' ? <BeginnerPath hasBean={Boolean(today)} cupCount={cups.length} /> : null}
+      {experience === 'beginner' ? <BeginnerPath hasBean={Boolean(today)} beanId={today?.id} cupCount={cups.length} /> : null}
 
       {pendingCup ? <NextAction icon="heart.fill" eyebrow="아직 남은 한 단계" title="방금 마신 커피는 어땠나요?" body="첫 느낌만 골라도 다음 추천에 반영돼요." label="맛 기록 남기기" onPress={() => router.push(`/record-cup/${pendingCup.id}`)} /> : goal === 'repeat' && lastHomeCup?.beanId ? <NextAction icon="arrow.clockwise" eyebrow="내 취향대로 반복하기" title="최근 레시피를 다시 내려볼까요?" body={`${lastHomeCup.beanName}로 남긴 경험을 기준으로 시작해요.`} label="같은 원두로 내리기" onPress={() => router.push(`/recipe/guided?beanId=${lastHomeCup.beanId}`)} /> : goal === 'explore' ? <NextAction icon="sparkles" eyebrow="내 취향 찾기" title="맛 기록이 쌓일수록 더 또렷해져요" body="좋았던 커피에 느낌을 남기면 취향 변화를 보여드려요." label="내 취향 보기" onPress={() => router.push('/taste-profile')} /> : null}
 
@@ -88,26 +102,44 @@ export default function HomeScreen() {
   );
 }
 
+function BeanHeroCopy({ bean, criterion }: { bean: BeanLot; criterion: string }) {
+  return (
+    <View style={styles.heroCopy}>
+      <Text variant="label" color={colors.creamDeep}>지금 내릴 원두</Text>
+      <Text variant="caption" color={colors.creamDeep}>{criterion}</Text>
+      <Text variant="title1" color={colors.cream} style={styles.heroTitle}>{bean.name}</Text>
+      <Text color={colors.cream}>{bean.tastingNotes.slice(0, 3).join(' · ') || [bean.country, bean.process].filter(Boolean).join(' · ')}</Text>
+      <View style={styles.remaining}><Icon name="leaf.fill" size={14} color={colors.cream} /><Text variant="label" color={colors.cream}>남은 양 {bean.remainingWeightG}g</Text></View>
+    </View>
+  );
+}
+
 function NextAction({ icon, eyebrow, title, body, label, onPress }: { icon: Parameters<typeof Icon>[0]['name']; eyebrow: string; title: string; body: string; label: string; onPress: () => void }) {
   return <Card tone="tinted" style={styles.nextAction}><View style={styles.nextIcon}><Icon name={icon} size={22} color={colors.espresso} /></View><View style={styles.flex}><Text variant="caption" color={colors.cocoa}>{eyebrow}</Text><Text variant="title3">{title}</Text><Text variant="caption" color={colors.neutral800}>{body}</Text></View><Button label={label} variant="tertiary" onPress={onPress} style={styles.nextButton} /></Card>;
 }
 
-function BeginnerPath({ hasBean, cupCount }: { hasBean: boolean; cupCount: number }) {
+function BeginnerPath({ hasBean, beanId, cupCount }: { hasBean: boolean; beanId?: string; cupCount: number }) {
   const active = !hasBean ? 0 : cupCount === 0 ? 1 : 2;
   const steps = [
     { label: '원두 고르기', icon: 'leaf.fill' as const },
-    { label: '안내대로 내리기', icon: 'waterbottle.fill' as const },
+    { label: '안내대로 내리기', icon: 'cup.and.heat.waves.fill' as const },
     { label: '맛 남기기', icon: 'heart.fill' as const },
   ];
+  const next = !hasBean
+    ? { label: '원두 추가하기', href: '/add-bean' }
+    : cupCount === 0 && beanId
+      ? { label: '안내 시작하기', href: `/recipe/guided?beanId=${beanId}` }
+      : { label: '내 기록 보기', href: '/(tabs)/journal' };
   return (
-    <View style={styles.path} accessible accessibilityLabel={`처음 시작하기. 현재 ${steps[active]!.label} 단계`}>
+    <Pressable accessibilityRole="button" accessibilityLabel={`처음 시작하기. 현재 ${steps[active]!.label} 단계. ${next.label}`} onPress={() => router.push(next.href as never)} style={({ pressed }) => [styles.path, pressed && styles.pressed]}>
       <Text variant="label">처음 시작하기</Text>
       <View style={styles.pathSteps}>{steps.map((step, index) => <View key={step.label} style={styles.pathStep}>
         <View style={[styles.pathIcon, index === active && styles.pathIconActive, index < active && styles.pathIconDone]}><Icon name={index < active ? 'checkmark' : step.icon} size={20} color={index <= active ? colors.cream : colors.neutral600} weight="bold" /></View>
         <Text variant="caption" color={index === active ? colors.espresso : colors.neutral600} style={index === active && styles.pathLabelActive}>{step.label}</Text>
         {index < steps.length - 1 ? <View style={[styles.pathLine, index < active && styles.pathLineDone]} /> : null}
       </View>)}</View>
-    </View>
+      <View style={styles.pathAction}><Text variant="label" color={colors.espresso}>{next.label}</Text><Icon name="chevron.right" size={17} color={colors.espresso} /></View>
+    </Pressable>
   );
 }
 
@@ -131,8 +163,11 @@ const styles = StyleSheet.create({
   hero: { height: 310, justifyContent: 'flex-end' },
   heroImage: { borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl },
   heroShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(35,25,18,0.24)' },
-  heroCopy: { padding: spacing.roomy, gap: spacing.compact, backgroundColor: 'rgba(35,25,18,0.26)' },
+  heroCopy: { padding: spacing.roomy, gap: 5, backgroundColor: 'rgba(35,25,18,0.36)' },
   heroTitle: { maxWidth: '75%' },
+  heroFallback: { overflow: 'hidden', backgroundColor: colors.cocoa },
+  fallbackRing: { position: 'absolute', width: 330, height: 330, borderRadius: 165, borderWidth: 1, borderColor: 'rgba(255,253,249,0.28)', top: -110, right: -62 },
+  fallbackBean: { position: 'absolute', width: 128, height: 128, borderRadius: 64, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,253,249,0.14)', top: 54, alignSelf: 'center' },
   remaining: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingTop: 2 },
   heroActions: { padding: spacing.default, gap: spacing.compact },
   primaryBrew: { minHeight: 62 },
@@ -149,6 +184,10 @@ const styles = StyleSheet.create({
   pathLine: { position: 'absolute', height: 2, backgroundColor: colors.neutral200, left: '66%', right: '-34%', top: 23 },
   pathLineDone: { backgroundColor: colors.taupe },
   pathLabelActive: { fontWeight: '700' },
+  pathAction: { minHeight: 44, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: spacing.small },
+  notificationWrap: { position: 'relative' },
+  notificationBadge: { position: 'absolute', minWidth: 19, height: 19, right: 2, top: 1, paddingHorizontal: 4, borderRadius: 10, backgroundColor: colors.terracotta, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.cream },
+  notificationBadgeText: { fontSize: 10, lineHeight: 12, fontWeight: '700' },
   cupList: { backgroundColor: colors.white, borderRadius: radius.large, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.neutral200 },
   cupRow: { minHeight: 92, flexDirection: 'row', alignItems: 'center', gap: spacing.small, padding: spacing.small, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.neutral200 },
   thumbnail: { width: 72, height: 72, borderRadius: radius.medium, overflow: 'hidden', backgroundColor: colors.creamDeep },

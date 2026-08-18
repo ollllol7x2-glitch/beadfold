@@ -70,7 +70,7 @@ export default function GuidedRecipeScreen() {
       <View style={styles.timeline}>
         {recipe.steps.map((step, index) => <View key={step.id} style={styles.stepRow}>
           <View style={styles.stepRail}><View style={styles.stepNumber}><Text variant="label" color={colors.cream}>{index + 1}</Text></View>{index < recipe.steps.length - 1 ? <View style={styles.line} /> : null}</View>
-          <View style={styles.stepCopy}><View style={styles.stepTitle}><Icon name={step.waterDeltaMl ? 'waterbottle.fill' : 'hourglass'} size={18} color={colors.cocoa} /><Text variant="title3" style={styles.flex}>{step.name}</Text><Text variant="label" color={colors.neutral800}>{step.waterDeltaMl ? `${step.waterDeltaMl}ml` : ''}{step.durationSec ? ` · ${step.durationSec}초` : ''}</Text></View><Text color={colors.neutral800}>{friendlyInstruction(step.instruction)}</Text></View>
+          <View style={styles.stepCopy}><View style={styles.stepTitle}><Icon name={step.waterDeltaMl ? 'drop.fill' : 'hourglass'} size={18} color={colors.cocoa} /><Text variant="title3" style={styles.flex}>{step.name}</Text><Text variant="label" color={colors.neutral800}>{step.waterDeltaMl ? `${step.waterDeltaMl}ml` : ''}{step.durationSec ? ` · ${step.durationSec}초` : ''}</Text></View><Text color={colors.neutral800}>{friendlyInstruction(step.instruction)}</Text></View>
         </View>)}
       </View>
 

@@ -303,7 +303,7 @@ export function EmptyState({ title, body, action, icon = 'leaf' }: { title: stri
 /** A non-blocking action sheet for choices that should not become a new destination. */
 export function BottomSheet({ visible, title, children, onClose }: { visible: boolean; title: string; children: ReactNode; onClose: () => void }) {
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.sheetOverlay}>
         <Pressable accessibilityRole="button" accessibilityLabel="메뉴 닫기" style={StyleSheet.absoluteFill} onPress={onClose} />
         <SafeAreaView edges={['bottom']} accessibilityViewIsModal style={styles.sheet}>
@@ -366,8 +366,8 @@ export function AppNavigation() {
             const selected = item.match.some((value) => pathname === value || (value !== '/' && pathname.startsWith(value)));
             return <NavigationItem key={item.label} item={item} selected={selected} />;
           })}
-          <Pressable accessibilityRole="button" accessibilityLabel="추가 메뉴 열기" onPress={() => setAddOpen(true)} style={({ pressed }) => [styles.navItem, styles.navAddWrap, pressed && styles.pressed]}>
-            <View style={styles.navAdd}><Text variant="label" color={colors.cream}>추가</Text></View>
+          <Pressable accessibilityRole="button" accessibilityLabel="원두 추가, 브루잉 시작, 카페 기록 메뉴 열기" onPress={() => setAddOpen(true)} style={({ pressed }) => [styles.navItem, styles.navAddWrap, pressed && styles.pressed]}>
+            <View style={styles.navAdd}><Text variant="label" color={colors.cream}>원두·기록</Text></View>
           </Pressable>
           {navItems.slice(2).map((item) => {
           const selected = item.match.some((value) => pathname === value || (value !== '/' && pathname.startsWith(value)));
@@ -378,7 +378,7 @@ export function AppNavigation() {
       <BottomSheet visible={addOpen} title="무엇을 할까요?" onClose={closeAdd}>
         <View style={styles.sheetActions}>
           <SheetAction icon="leaf.fill" title="원두 추가" body="이름과 남은 양만으로 빠르게 시작해요" onPress={() => { closeAdd(); router.push('/add-bean'); }} />
-          <SheetAction icon="waterbottle.fill" title="집에서 내리기" body={beans.length ? '원두를 고르고 단계 안내를 시작해요' : '먼저 원두 하나를 추가해주세요'} onPress={openHomeBrew} />
+          <SheetAction icon="cup.and.heat.waves.fill" title="집에서 내리기" body={beans.length ? '원두를 고르고 단계 안내를 시작해요' : '먼저 원두 하나를 추가해주세요'} onPress={openHomeBrew} />
           <SheetAction icon="cup.and.saucer.fill" title="카페 커피 기록" body="밖에서 마신 한 잔을 간단히 남겨요" onPress={() => { closeAdd(); router.push('/record-cafe'); }} />
         </View>
       </BottomSheet>
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
   navIcon: { width: 44, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   navIconSelected: { backgroundColor: colors.creamDeep },
   navAddWrap: { flex: 1.25 },
-  navAdd: { minWidth: 76, height: 52, paddingHorizontal: 14, borderRadius: 26, backgroundColor: colors.espresso, alignItems: 'center', justifyContent: 'center', ...shadows.lifted },
+  navAdd: { minWidth: 102, height: 52, paddingHorizontal: 14, borderRadius: 26, backgroundColor: colors.espresso, alignItems: 'center', justifyContent: 'center', ...shadows.lifted },
   navLabelSelected: { fontFamily: fonts.bold },
   sheetOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.overlay },
   sheet: { width: '100%', maxWidth: Platform.OS === 'web' ? 520 : undefined, alignSelf: 'center', gap: spacing.small, paddingHorizontal: 20, paddingTop: spacing.compact, paddingBottom: spacing.small, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, backgroundColor: colors.cream },

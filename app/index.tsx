@@ -11,7 +11,7 @@ type Goal = 'guided' | 'repeat' | 'explore';
 
 const experienceOptions: { value: Experience; title: string; body: string; icon: SymbolName }[] = [
   { value: 'beginner', title: '처음이에요', body: '무엇부터 할지 알려주세요', icon: 'cup.and.saucer.fill' },
-  { value: 'casual', title: '가끔 내려요', body: '추천을 빠르게 받고 싶어요', icon: 'waterbottle.fill' },
+  { value: 'casual', title: '가끔 내려요', body: '추천을 빠르게 받고 싶어요', icon: 'cup.and.heat.waves.fill' },
   { value: 'advanced', title: '직접 조절해요', body: '변수와 기록을 자세히 볼게요', icon: 'slider.horizontal.3' },
 ];
 
@@ -89,7 +89,7 @@ export default function OnboardingScreen() {
             <View style={styles.readySteps}>
               <Icon name="leaf.fill" size={28} color={colors.espresso} />
               <Icon name="chevron.right" size={16} color={colors.taupe} />
-              <Icon name="waterbottle.fill" size={32} color={colors.espresso} />
+              <Icon name="cup.and.heat.waves.fill" size={32} color={colors.espresso} />
               <Icon name="chevron.right" size={16} color={colors.taupe} />
               <Icon name="heart.fill" size={28} color={colors.terracotta} />
             </View>
@@ -100,7 +100,7 @@ export default function OnboardingScreen() {
           </View>
           <View style={styles.preview}>
             <PreviewStep number="1" icon="leaf.fill" title="원두 고르기" />
-            <PreviewStep number="2" icon="waterbottle.fill" title="안내대로 내리기" />
+            <PreviewStep number="2" icon="cup.and.heat.waves.fill" title="안내대로 내리기" />
             <PreviewStep number="3" icon="heart.fill" title="맛 남기기" />
           </View>
         </>
