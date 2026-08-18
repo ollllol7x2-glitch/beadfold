@@ -125,6 +125,12 @@ export interface TasteDimension {
   score: number;
 }
 
+export interface TasteAverage {
+  key: keyof TasteValues;
+  value: number;
+  count: number;
+}
+
 export interface TasteProfile {
   cupCount: number;
   ratedCupCount: number;
@@ -133,6 +139,7 @@ export interface TasteProfile {
   topOrigins: TasteDimension[];
   topProcesses: TasteDimension[];
   topRoasts: TasteDimension[];
+  tasteAverages: TasteAverage[];
   recentTrend: string;
   insight: string;
 }

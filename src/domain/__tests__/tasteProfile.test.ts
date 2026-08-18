@@ -30,4 +30,18 @@ describe('taste profile', () => {
     const profile = calculateTasteProfile([unknown, cup('2', 'good', 'Clean'), cup('3', 'good', 'Sweet')]);
     expect(profile.topRoasts.some((item) => item.label === 'unknown')).toBe(false);
   });
+
+  it('averages the detailed taste axes that were actually recorded', () => {
+    const first = cup('1', 'loved', 'Floral');
+    first.taste = { ...emptyTasteValues(), acidity: 4, sweetness: 5, balance: 4 };
+    const second = cup('2', 'good', 'Sweet');
+    second.taste = { ...emptyTasteValues(), acidity: 2, sweetness: 4 };
+
+    const profile = calculateTasteProfile([first, second]);
+
+    expect(profile.tasteAverages).toContainEqual({ key: 'acidity', value: 3, count: 2 });
+    expect(profile.tasteAverages).toContainEqual({ key: 'sweetness', value: 4.5, count: 2 });
+    expect(profile.tasteAverages).toContainEqual({ key: 'balance', value: 4, count: 1 });
+    expect(profile.tasteAverages.some((item) => item.key === 'body')).toBe(false);
+  });
 });

@@ -1,4 +1,4 @@
-import type { Cup, Satisfaction, TasteDimension, TasteProfile } from './types';
+import type { Cup, Satisfaction, TasteDimension, TasteProfile, TasteValues } from './types';
 import { localizedFlavor, satisfactionScore } from './types';
 
 function aggregate(cups: Cup[], labels: (cup: Cup) => string[]): TasteDimension[] {
@@ -19,6 +19,7 @@ function aggregate(cups: Cup[], labels: (cup: Cup) => string[]): TasteDimension[
 
 export function calculateTasteProfile(cups: Cup[]): TasteProfile {
   const rated = cups.filter((cup) => cup.satisfaction);
+  const tasteKeys = ['acidity', 'sweetness', 'body', 'bitterness', 'aroma', 'aftertaste', 'balance'] as (keyof TasteValues)[];
   const averageScore = rated.length
     ? Number((rated.reduce((sum, cup) => sum + satisfactionScore[cup.satisfaction!], 0) / rated.length).toFixed(2))
     : null;
@@ -26,6 +27,11 @@ export function calculateTasteProfile(cups: Cup[]): TasteProfile {
   const topOrigins = aggregate(rated, (cup) => cup.beanSnapshot?.country ? [cup.beanSnapshot.country] : []);
   const topProcesses = aggregate(rated, (cup) => cup.beanSnapshot?.process ? [cup.beanSnapshot.process] : []);
   const topRoasts = aggregate(rated, (cup) => cup.beanSnapshot?.roastLevel && cup.beanSnapshot.roastLevel !== 'unknown' ? [cup.beanSnapshot.roastLevel] : []);
+  const tasteAverages = tasteKeys.flatMap((key) => {
+    const values = rated.map((cup) => cup.taste[key]).filter((value): value is number => value != null);
+    if (!values.length) return [];
+    return [{ key, value: Number((values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1)), count: values.length }];
+  });
   let insight = '커피를 마시고 첫 느낌을 남겨보세요.';
   let recentTrend = '기록이 쌓이면 최근 취향 변화를 보여드려요.';
   if (rated.length >= 3 && topFlavors[0]) {
@@ -50,6 +56,7 @@ export function calculateTasteProfile(cups: Cup[]): TasteProfile {
     topOrigins: topOrigins.slice(0, 5),
     topProcesses: topProcesses.slice(0, 5),
     topRoasts: topRoasts.slice(0, 5),
+    tasteAverages,
     recentTrend,
     insight,
   };
