@@ -79,14 +79,14 @@ export default function GearScreen() {
                 {item.isPrimary ? <View style={styles.primary}><Icon name="checkmark.circle.fill" size={18} color={colors.success} /><Text variant="label" color={colors.success}>주로 사용</Text></View> : null}
               </View>
               <View style={styles.actions}>
-                {!item.isPrimary ? <Button label="주로 사용" variant="secondary" onPress={() => {
+                <Button label="제거" variant="tertiary" onPress={() => setRemoveTarget(item)} style={styles.flex} />
+                {item.isCustom ? <Button label="이름 수정" variant="secondary" onPress={() => { setEditingId(item.id); setEditingName(item.name); }} style={styles.flex} /> : null}
+                {!item.isPrimary ? <Button label="주로 사용" onPress={() => {
                   void setPrimaryGear(db, item.id, item.category).then(async () => {
                     showFeedback(`${labels[item.category]} 대표 장비를 바꿨어요.`);
                     await load();
                   });
                 }} style={styles.flex} /> : null}
-                {item.isCustom ? <Button label="이름 수정" variant="secondary" onPress={() => { setEditingId(item.id); setEditingName(item.name); }} style={styles.flex} /> : null}
-                <Button label="제거" variant="tertiary" onPress={() => setRemoveTarget(item)} style={styles.flex} />
               </View>
             </>
           )}

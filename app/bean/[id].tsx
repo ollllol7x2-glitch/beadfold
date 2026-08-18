@@ -52,7 +52,7 @@ export default function BeanDetailScreen() {
         <Text color={colors.neutral800}>처음 {bean.initialWeightG}g · {beanStateLabel[bean.state]}</Text>
         {bean.remainingWeightG < 30 && bean.state !== 'finished' ? <Text accessibilityRole="alert" color={colors.error}>원두가 약 2회분 이하로 남았어요.</Text> : null}
       </Card>
-      <View style={styles.actions}><Button label="추천대로 내리기" onPress={() => router.push(`/recipe/guided?beanId=${bean.id}`)} style={styles.flex} /><Button label="직접 조절" variant="secondary" onPress={() => router.push(`/recipe/manual?beanId=${bean.id}`)} style={styles.flex} /></View>
+      <View style={styles.actions}><Button label="직접 조절" variant="secondary" onPress={() => router.push(`/recipe/manual?beanId=${bean.id}`)} style={styles.flex} /><Button label="추천대로 내리기" onPress={() => router.push(`/recipe/guided?beanId=${bean.id}`)} style={styles.flex} /></View>
       <Button label={hasDetails ? '원두 정보 수정' : '원두 정보 추가'} variant="secondary" onPress={() => router.push(`/add-bean?editId=${bean.id}`)} />
       {hasDetails ? <Card>
         <Text variant="title2">원두 정보</Text>
