@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { CupSummary, RecipeSummary } from '@/components/data';
-import { Button, Card, EmptyState, PageHeader, Screen, Text } from '@/components/ui';
+import { Button, Card, EmptyState, PageHeader, PageIntro, Screen, Text } from '@/components/ui';
 import { archiveBean, deleteBean, getBean, listCups, listRecipes } from '@/database/repository';
 import type { BeanLot, Cup, Recipe } from '@/domain/types';
 import { colors, spacing } from '@/design-system/tokens';
@@ -45,7 +45,8 @@ export default function BeanDetailScreen() {
   const preparation = [bean.process, bean.roastLevel === 'unknown' ? '' : roastLevelLabel[bean.roastLevel]].filter(Boolean).join(' · ');
 
   return (
-    <Screen header={<PageHeader title={bean.name} description={[bean.roaster, bean.country, bean.region].filter(Boolean).join(' · ') || '직접 등록한 원두'} backLabel="보관함" backHref="/(tabs)/collection" />}>
+    <Screen header={<PageHeader title={bean.name} backLabel="보관함" backHref="/(tabs)/collection" />}>
+      <PageIntro>{[bean.roaster, bean.country, bean.region].filter(Boolean).join(' · ') || '직접 등록한 원두'}</PageIntro>
       <Card style={styles.hero}>
         <Text variant="label">{preparation || '가공·로스팅 정보 미입력'}</Text>
         <Text variant="title1">{bean.remainingWeightG}g</Text>

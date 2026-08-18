@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { Button, Card, Chip, Field, Icon, PageHeader, Screen, Text } from '@/components/ui';
+import { Button, Card, Chip, Field, Icon, PageHeader, PageIntro, Screen, Text } from '@/components/ui';
 import { addUserGear, deleteUserGear, listCatalogGear, listUserGear, renameUserGear, setPrimaryGear } from '@/database/repository';
 import type { Gear } from '@/domain/types';
 import { colors, spacing } from '@/design-system/tokens';
@@ -49,7 +49,8 @@ export default function GearScreen() {
   const filtered = catalog.filter((item) => item.category === category);
 
   return (
-    <Screen header={<PageHeader title="내 장비" description="주로 쓰는 장비는 다음 추천 레시피에 반영돼요." backLabel="보관함" backHref="/(tabs)/collection" />}>
+    <Screen header={<PageHeader title="내 장비" backLabel="보관함" backHref="/(tabs)/collection" />}>
+      <PageIntro>주로 쓰는 장비는 다음 추천 레시피에 반영돼요.</PageIntro>
       <View style={styles.row}>{categories.map((item) => <Chip key={item} label={labels[item]} selected={category === item} onPress={() => setCategory(item)} />)}</View>
 
       <Text variant="title2">내가 쓰는 장비</Text>

@@ -20,7 +20,8 @@ export default function ProfileScreen() {
   }, [db]));
 
   return (
-    <Screen header={<View style={styles.header}><View><Text variant="title1" accessibilityRole="header">프로필</Text><Text color={colors.neutral800}>나의 커피 기록과 앱 설정을 관리해요.</Text></View><View style={styles.heart}><Icon name="person.crop.circle" size={30} color={colors.espresso} /></View></View>} contentContainerStyle={styles.screen}>
+    <Screen header={<View style={styles.header}><Text variant="title1" accessibilityRole="header">프로필</Text><View style={styles.heart}><Icon name="person.crop.circle" size={30} color={colors.espresso} /></View></View>} contentContainerStyle={styles.screen}>
+      <Text variant="bodyLarge" color={colors.neutral800}>나의 커피 기록과 앱 설정을 관리해요.</Text>
       <Pressable accessibilityRole="button" accessibilityLabel={`${friendlyInsight(profile)}. 취향 자세히 보기`} onPress={() => router.push('/taste-profile')} style={styles.hero}>
         <View style={styles.heroIcon}><Icon name="sparkles" size={32} color={colors.espresso} /></View><Text variant="caption" color={colors.cocoa}>지금 보이는 취향</Text><Text variant="title1">{friendlyInsight(profile)}</Text><Text color={colors.neutral800}>{profile.ratedCupCount < 3 ? `맛을 남긴 커피가 ${3 - profile.ratedCupCount}잔 더 필요해요.` : `${profile.ratedCupCount}잔을 바탕으로 찾았어요.`}</Text><View style={styles.more}><Text variant="label">자세히 보기</Text><Icon name="chevron.right" size={16} /></View>
       </Pressable>

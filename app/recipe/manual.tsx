@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { BottomActionBar, Button, Card, Chip, Field, goBackOrReplace, Icon, Screen, TaskHeader, Text } from '@/components/ui';
+import { BottomActionBar, Button, Card, Chip, Field, goBackOrReplace, Icon, PageIntro, Screen, TaskHeader, Text } from '@/components/ui';
 import { createManualRecipe, validateRecipe } from '@/domain/recipeEngine';
 import type { BeanLot, Recipe } from '@/domain/types';
 import { deleteRecipe, duplicateRecipe, getBean, getRecipe, listBeans, saveRecipe, startBrew } from '@/database/repository';
@@ -88,7 +88,8 @@ export default function ManualRecipeScreen() {
   if (!bean || !recipe) return <Screen><Text>직접 레시피를 만들려면 먼저 원두를 골라주세요.</Text><Button label="원두 추가" onPress={() => router.replace('/add-bean')} /></Screen>;
 
   return (
-    <Screen showNavigation={false} header={<TaskHeader title="내 방식으로 내리기" description="먼저 핵심 값만 정하고, 필요할 때 세부 단계를 조절하세요." onClose={() => requestExit(() => goBackOrReplace(`/bean/${bean.id}`))} />} footer={<BottomActionBar primaryLabel="이 레시피로 브루잉" primaryDisabled={Boolean(validation.length)} onPrimaryPress={() => void brew()} secondaryLabel="저장" onSecondaryPress={() => void save()} />}>
+    <Screen showNavigation={false} header={<TaskHeader title="내 방식으로 내리기" onClose={() => requestExit(() => goBackOrReplace(`/bean/${bean.id}`))} />} footer={<BottomActionBar primaryLabel="이 레시피로 브루잉" primaryDisabled={Boolean(validation.length)} onPrimaryPress={() => void brew()} secondaryLabel="저장" onSecondaryPress={() => void save()} />}>
+      <PageIntro>먼저 핵심 값만 정하고, 필요할 때 세부 단계를 조절하세요.</PageIntro>
       {errors.length ? <Card style={styles.error}>{errors.map((error) => <Text key={error} accessibilityRole="alert" color={colors.error}>오류: {error}</Text>)}</Card> : null}
       {saved ? <Text accessibilityRole="alert" color={colors.neutral800}>저장했어요. 다음에도 이 레시피를 사용할 수 있어요.</Text> : null}
       <Field label="레시피 이름" value={recipe.name} onChangeText={(value) => updateText('name', value)} />

@@ -221,7 +221,12 @@ export function Chip({ label, selected, onPress, accessibilityLabel, icon }: { l
   );
 }
 
-export function PageHeader({ eyebrow, title, description, action, backLabel, backHref }: { eyebrow?: string; title: string; description?: string; action?: ReactNode; backLabel?: string; backHref?: Href }) {
+/** Use this in scroll content for supporting copy; sticky headers stay limited to orientation and actions. */
+export function PageIntro({ children }: { children: ReactNode }) {
+  return <Text variant="bodyLarge" color={colors.neutral800}>{children}</Text>;
+}
+
+export function PageHeader({ eyebrow, title, action, backLabel, backHref }: { eyebrow?: string; title: string; action?: ReactNode; backLabel?: string; backHref?: Href }) {
   if (backLabel) {
     return (
       <View style={styles.headerWrap}>
@@ -230,7 +235,6 @@ export function PageHeader({ eyebrow, title, description, action, backLabel, bac
           <Text variant="title3" accessibilityRole="header" numberOfLines={1} style={styles.compactHeaderTitle}>{title}</Text>
           <View style={[styles.headerSide, styles.headerAction]}>{action}</View>
         </View>
-        {description ? <Text variant="bodyLarge" color={colors.neutral800}>{description}</Text> : null}
       </View>
     );
   }
@@ -240,7 +244,6 @@ export function PageHeader({ eyebrow, title, description, action, backLabel, bac
         <View style={styles.headerCopy}>
           {eyebrow ? <Text variant="caption" color={colors.neutral600} style={styles.eyebrow}>{eyebrow}</Text> : null}
           <Text variant="title1" accessibilityRole="header">{title}</Text>
-          {description ? <Text variant="bodyLarge" color={colors.neutral800}>{description}</Text> : null}
         </View>
         {action}
       </View>
@@ -249,7 +252,7 @@ export function PageHeader({ eyebrow, title, description, action, backLabel, bac
 }
 
 /** A consistent header for full-screen creation and editing tasks. */
-export function TaskHeader({ title, description, onClose, closeLabel = '닫기' }: { title: string; description?: string; onClose: () => void; closeLabel?: string }) {
+export function TaskHeader({ title, onClose, closeLabel = '닫기' }: { title: string; onClose: () => void; closeLabel?: string }) {
   return (
     <View style={styles.headerWrap}>
       <View style={styles.compactHeader}>
@@ -257,7 +260,6 @@ export function TaskHeader({ title, description, onClose, closeLabel = '닫기' 
         <Text variant="title3" accessibilityRole="header" numberOfLines={1} style={styles.compactHeaderTitle}>{title}</Text>
         <View style={styles.headerSide} />
       </View>
-      {description ? <Text variant="bodyLarge" color={colors.neutral800}>{description}</Text> : null}
     </View>
   );
 }

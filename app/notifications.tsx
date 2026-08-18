@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { EmptyState, Icon, PageHeader, Screen, Text, type SymbolName } from '@/components/ui';
+import { EmptyState, Icon, PageHeader, PageIntro, Screen, Text, type SymbolName } from '@/components/ui';
 import { getInterruptedBrew, listBeans, listCups } from '@/database/repository';
 import type { BeanLot, BrewSession, Cup } from '@/domain/types';
 import { colors, radius, spacing } from '@/design-system/tokens';
@@ -36,7 +36,8 @@ export default function NotificationsScreen() {
   const notices = useMemo(() => buildNotices(beans, cups, interrupted), [beans, cups, interrupted]);
 
   return (
-    <Screen header={<PageHeader title="알림" description="지금 확인할 내용을 모아봤어요." backLabel="홈" backHref="/(tabs)" />} contentContainerStyle={styles.screen}>
+    <Screen header={<PageHeader title="알림" backLabel="홈" backHref="/(tabs)" />} contentContainerStyle={styles.screen}>
+      <PageIntro>지금 확인할 내용을 모아봤어요.</PageIntro>
       {notices.length ? (
         <View style={styles.list}>
           <Text variant="label" color={colors.neutral600}>확인할 알림 {notices.length}개</Text>

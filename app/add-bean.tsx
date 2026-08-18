@@ -3,7 +3,7 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import * as ImagePicker from 'expo-image-picker';
-import { BottomActionBar, Button, Card, Chip, Field, goBackOrReplace, Icon, Screen, TaskHeader, Text } from '@/components/ui';
+import { BottomActionBar, Button, Card, Chip, Field, goBackOrReplace, Icon, PageIntro, Screen, TaskHeader, Text } from '@/components/ui';
 import { createBean, getBean, matchKnowledgeFromLabel, trackEvent, updateBean } from '@/database/repository';
 import type { BeanLot, BeanState, RoastLevel } from '@/domain/types';
 import { colors, radius, spacing } from '@/design-system/tokens';
@@ -173,7 +173,8 @@ export default function AddBeanScreen() {
     </Screen>;
   }
 
-  return <Screen showNavigation={false} header={<TaskHeader title={existing ? '원두 정보 수정' : '새 원두 추가'} description={existing ? '바뀐 정보만 고쳐주세요.' : '이름과 남은 양만 알면 바로 시작할 수 있어요.'} onClose={() => requestExit(() => goBackOrReplace(existing ? `/bean/${existing.id}` : '/(tabs)/collection'))} />} contentContainerStyle={styles.screen} footer={<BottomActionBar primaryLabel={existing ? '변경사항 저장' : '원두 추가'} primaryLoading={saving} onPrimaryPress={() => void save()} />}>
+  return <Screen showNavigation={false} header={<TaskHeader title={existing ? '원두 정보 수정' : '새 원두 추가'} onClose={() => requestExit(() => goBackOrReplace(existing ? `/bean/${existing.id}` : '/(tabs)/collection'))} />} contentContainerStyle={styles.screen} footer={<BottomActionBar primaryLabel={existing ? '변경사항 저장' : '원두 추가'} primaryLoading={saving} onPrimaryPress={() => void save()} />}>
+    <PageIntro>{existing ? '바뀐 정보만 고쳐주세요.' : '이름과 남은 양만 알면 바로 시작할 수 있어요.'}</PageIntro>
 
     {!existing ? <View style={styles.sources}>
       <SourceAction icon="camera.fill" title="봉투 촬영" body="사진에서 필요한 정보를 찾아 채워요" onPress={() => void pickImage(true)} />

@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { Linking, Platform, StyleSheet, Switch, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { Button, Card, Icon, PageHeader, Screen, Text, type SymbolName } from '@/components/ui';
+import { Button, Card, Icon, PageHeader, PageIntro, Screen, Text, type SymbolName } from '@/components/ui';
 import { getSetting, setSetting } from '@/database/repository';
 import { colors, spacing } from '@/design-system/tokens';
 import { requestTasteReminderPermission } from '@/services/notifications';
@@ -15,7 +15,8 @@ export default function SettingsScreen() {
   const update = async (key: string, value: boolean, setter: (value: boolean) => void) => { setter(value); await setSetting(db, key, String(value)); };
   const notifications = async () => { const granted = await requestTasteReminderPermission(); await setSetting(db, 'notification_reminders', String(granted)); setStatus(granted ? '브루잉이 끝난 뒤 맛 기록을 잊지 않도록 알려드릴게요.' : '알림을 켜지 않았어요. 필요할 때 다시 선택할 수 있어요.'); };
   const storageCopy = Platform.OS === 'web' ? '기록은 이 브라우저에 저장돼요. 브라우저 데이터를 지우면 함께 사라질 수 있어요.' : '기록은 이 휴대폰에 저장돼요. 앱을 지우면 함께 사라질 수 있어요.';
-  return <Screen header={<PageHeader title="설정" description="내리기 편한 방식으로 맞춰보세요." backLabel="프로필" backHref="/(tabs)/profile" />} contentContainerStyle={styles.screen}>
+  return <Screen header={<PageHeader title="설정" backLabel="프로필" backHref="/(tabs)/profile" />} contentContainerStyle={styles.screen}>
+    <PageIntro>내리기 편한 방식으로 맞춰보세요.</PageIntro>
     {status ? <Text accessibilityRole="alert" color={colors.neutral800}>{status}</Text> : null}
     <View style={styles.group}><Setting icon="hand.tap.fill" label="단계 알림 진동" body="다음 단계가 되면 짧게 알려줘요" value={haptics} onChange={(value) => void update('haptics', value, setHaptics)} /><Setting icon="speaker.wave.2.fill" label="알림 소리" body="맛 기록 알림에 소리를 사용해요" value={sound} onChange={(value) => void update('sound', value, setSound)} /><Setting icon="figure.walk.motion" label="화면 움직임 줄이기" body="화면 전환과 장식 움직임을 줄여요" value={reduceMotion} onChange={(value) => void update('reduce_motion', value, setReduceMotion)} /></View>
     <Card><Text variant="title3">표시 방식</Text><InfoRow label="단위" value="g, ml, ℃" /><InfoRow label="언어" value="한국어" /><Text variant="caption" color={colors.neutral600}>다른 단위와 언어는 전체 화면에 일관되게 적용할 수 있을 때 제공할게요.</Text></Card>
