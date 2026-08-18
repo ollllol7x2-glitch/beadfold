@@ -46,7 +46,7 @@ export default function GearScreen() {
   };
 
   const mine = owned.filter((item) => item.category === category);
-  const filtered = catalog.filter((item) => item.category === category);
+  const filtered = catalog.filter((item) => item.category === category && !owned.some((ownedItem) => ownedItem.category === item.category && ownedItem.name === item.name));
 
   return (
     <Screen header={<PageHeader title="내 장비" backLabel="보관함" backHref="/(tabs)/collection" />}>
@@ -94,13 +94,13 @@ export default function GearScreen() {
       )) : <Text color={colors.neutral800}>아직 등록한 {labels[category]}가 없어요.</Text>}
 
       <Text variant="title2">장비 목록</Text>
-      {filtered.map((item) => (
+      {filtered.length ? filtered.map((item) => (
         <Card key={item.id}>
           <Text variant="title3">{item.name}</Text>
           <Text color={colors.neutral800}>{item.brand}</Text>
-          <Button label="내 장비에 추가" variant="secondary" disabled={owned.some((ownedItem) => ownedItem.name === item.name)} onPress={() => void add(item)} />
+          <Button label="내 장비에 추가" variant="secondary" onPress={() => void add(item)} />
         </Card>
-      ))}
+      )) : <Text color={colors.neutral800}>이 분류의 기본 장비는 모두 추가했어요.</Text>}
 
       <Card>
         <Text variant="title3">목록에 없나요?</Text>
