@@ -21,7 +21,7 @@ export default function CompareScreen() {
     void trackEvent(db, 'compare_started', { bean_id: beanId ?? null, selected_count: requestedIds.length });
     void listCups(db, beanId ? { beanId } : undefined).then((all) => {
       const home = all.filter((cup) => cup.kind === 'home' && cup.beanId);
-      const target = requestedIds.length ? home.filter((cup) => requestedIds.includes(cup.id)) : beanId ? home : home.filter((cup) => home.filter((other) => other.beanId === cup.beanId).length >= 2);
+      const target = requestedIds.length ? home.filter((cup) => requestedIds.includes(cup.id)) : home;
       if (active) {
         setCups(target);
         setSelected(requestedIds.length ? target.map((cup) => cup.id).slice(0, 2) : target.slice(0, 2).map((cup) => cup.id));
@@ -32,15 +32,18 @@ export default function CompareScreen() {
 
   const chosen = useMemo(() => selected.map((id) => cups.find((cup) => cup.id === id)).filter(Boolean).sort((first, second) => new Date(first!.createdAt).getTime() - new Date(second!.createdAt).getTime()) as Cup[], [cups, selected]);
   useEffect(() => { if (chosen.length === 2) void trackEvent(db, 'compare_completed', { bean_id: beanId ?? null }); }, [beanId, chosen.length, db]);
-  if (cups.length < 2) return <Screen header={<PageHeader title="두 잔 비교" backLabel="기록" backHref="/(tabs)/journal" />}><EmptyState title="한 잔이 더 필요해요" body="같은 원두로 두 번 내리면 추출값과 맛의 차이를 볼 수 있어요." icon="arrow.left.arrow.right" /></Screen>;
+  if (cups.length < 2) return <Screen header={<PageHeader title="두 잔 비교" backLabel="기록" backHref="/(tabs)/journal" />}><EmptyState title="한 잔이 더 필요해요" body="집에서 내린 기록 두 잔이 있으면 원두와 추출값, 맛을 비교할 수 있어요." icon="arrow.left.arrow.right" /></Screen>;
 
   const variables = chosen.length === 2 ? variableDifferences(chosen) : [];
   const tastes = chosen.length === 2 ? tasteDifferences(chosen) : [];
   const scores = chosen.map((cup) => cup.satisfaction ? satisfactionScore[cup.satisfaction] : null);
   const winner = scores[0] != null && scores[1] != null && scores[0] !== scores[1] ? (scores[0]! > scores[1]! ? 0 : 1) : null;
-  const beanName = chosen[0]?.beanName ?? cups[0]!.beanName;
+  const beanNames = [...new Set(chosen.map((cup) => cup.beanName))];
+  const isSameBean = beanNames.length <= 1;
+  const introTitle = isSameBean ? beanNames[0] ?? cups[0]!.beanName : '서로 다른 원두';
+  const introBody = isSameBean ? '한 원두 안에서 달라진 추출 조건과 맛을 비교해요.' : `${beanNames.join(' · ')}. 원두와 추출 조건, 맛을 함께 비교해요.`;
   return <Screen header={<PageHeader title="두 잔 비교" backLabel="기록" backHref="/(tabs)/journal" />} contentContainerStyle={styles.screen}>
-    <View style={styles.intro}><Text variant="title1">{beanName}</Text><Text color={colors.neutral800}>달라진 조건과 맛만 비교해요.</Text></View>
+    <View style={styles.intro}><Text variant="title1">{introTitle}</Text><Text color={colors.neutral800}>{introBody}</Text></View>
     <View style={styles.selector}>
       <Text variant="label">비교할 두 잔</Text>
       <View style={styles.cupSelectors}>{cups.map((cup) => <CompareCupOption key={cup.id} cup={cup} selected={selected.includes(cup.id)} onPress={() => setSelected((current) => current.includes(cup.id) ? current.filter((id) => id !== cup.id) : current.length < 2 ? [...current, cup.id] : [current[1]!, cup.id])} />)}</View>
@@ -71,7 +74,8 @@ function CompareCupOption({ cup, selected, onPress }: { cup: Cup; selected: bool
   const conditions = recipe ? `${recipe.temperatureC}℃ · ${formatDuration(recipe.totalTimeSec)}` : '추출 조건 없음';
   const feedback = [cup.satisfaction ? satisfactionLabel[cup.satisfaction] : '평가 전', cup.flavorTags[0] ? localizedFlavor(cup.flavorTags[0]) : '맛 태그 없음'].join(' · ');
   return <Pressable accessibilityRole="button" accessibilityLabel={`${formatCupDate(cup)} 기록. ${conditions}. ${feedback}`} accessibilityState={{ selected }} onPress={onPress} style={({ pressed }) => [styles.cupSelector, selected && styles.cupSelectorSelected, pressed && styles.pressed]}>
-    <View style={styles.selectorTitle}><Text variant="label" color={selected ? colors.cream : colors.charcoal}>{conditions}</Text>{selected ? <Icon name="checkmark" size={16} color={colors.cream} weight="bold" /> : null}</View>
+    <View style={styles.selectorTitle}><Text variant="label" color={selected ? colors.cream : colors.charcoal} numberOfLines={1}>{cup.beanName}</Text>{selected ? <Icon name="checkmark" size={16} color={colors.cream} weight="bold" /> : null}</View>
+    <Text variant="caption" color={selected ? colors.creamDeep : colors.neutral800}>{conditions}</Text>
     <Text variant="caption" color={selected ? colors.creamDeep : colors.neutral800} numberOfLines={1}>{feedback}</Text>
     <Text variant="caption" color={selected ? colors.creamDeep : colors.neutral600}>{formatCupDate(cup)}</Text>
   </Pressable>;
@@ -109,7 +113,7 @@ const styles = StyleSheet.create({
   intro: { gap: spacing.xs },
   selector: { gap: spacing.small },
   cupSelectors: { flexDirection: 'row', gap: spacing.compact },
-  cupSelector: { flex: 1, minHeight: 104, justifyContent: 'center', gap: 4, padding: spacing.small, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.medium, backgroundColor: colors.white },
+  cupSelector: { flex: 1, minHeight: 122, justifyContent: 'center', gap: 4, padding: spacing.small, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.medium, backgroundColor: colors.white },
   cupSelectorSelected: { backgroundColor: colors.espresso, borderColor: colors.espresso },
   selectorTitle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs },
   result: { gap: spacing.small, padding: spacing.default, borderRadius: radius.large, backgroundColor: colors.creamDeep, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.warmBeige },
