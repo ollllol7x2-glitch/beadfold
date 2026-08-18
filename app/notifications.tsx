@@ -36,8 +36,7 @@ export default function NotificationsScreen() {
   const notices = useMemo(() => buildNotices(beans, cups, interrupted), [beans, cups, interrupted]);
 
   return (
-    <Screen contentContainerStyle={styles.screen}>
-      <PageHeader title="알림" description="지금 확인할 내용을 모아봤어요." backLabel="홈" />
+    <Screen header={<PageHeader title="알림" description="지금 확인할 내용을 모아봤어요." backLabel="홈" backHref="/(tabs)" />} contentContainerStyle={styles.screen}>
       {notices.length ? (
         <View style={styles.list}>
           <Text variant="label" color={colors.neutral600}>확인할 알림 {notices.length}개</Text>

@@ -3,7 +3,7 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import * as ImagePicker from 'expo-image-picker';
-import { BottomActionBar, Button, Card, Chip, Field, Icon, Screen, TaskHeader, Text } from '@/components/ui';
+import { BottomActionBar, Button, Card, Chip, Field, goBackOrReplace, Icon, Screen, TaskHeader, Text } from '@/components/ui';
 import { getCup, recordCupFeedback } from '@/database/repository';
 import { emptyTasteValues, satisfactionLabel, type Cup, type Satisfaction, type TasteValues } from '@/domain/types';
 import { colors, spacing } from '@/design-system/tokens';
@@ -50,8 +50,7 @@ export default function RecordCupScreen() {
 
   if (!cup) return <Screen><Text>컵 기록을 불러오고 있어요…</Text></Screen>;
   return (
-    <Screen showNavigation={false} footer={<BottomActionBar primaryLabel={cup.satisfaction ? '변경사항 저장' : '맛 기록 저장'} primaryLoading={saving} onPrimaryPress={() => void save()} />}>
-      <TaskHeader title="이 커피는 어땠나요?" description="첫 느낌만 골라도 충분해요." closeLabel="나중에" onClose={() => requestExit(() => router.replace('/(tabs)/journal'))} />
+    <Screen showNavigation={false} header={<TaskHeader title="이 커피는 어땠나요?" description="첫 느낌만 골라도 충분해요." closeLabel="나중에" onClose={() => requestExit(() => goBackOrReplace('/(tabs)/journal'))} />} footer={<BottomActionBar primaryLabel={cup.satisfaction ? '변경사항 저장' : '맛 기록 저장'} primaryLoading={saving} onPrimaryPress={() => void save()} />}>
       {error ? <Text accessibilityRole="alert" color={colors.error}>{error}</Text> : null}
       <View style={styles.ratings}>{(['not_for_me', 'good', 'loved'] as Satisfaction[]).map((value) => <View key={value} style={styles.ratingChoice}><View style={[styles.ratingIcon, satisfaction === value && styles.ratingIconSelected]}><Icon name={value === 'loved' ? 'heart.fill' : value === 'good' ? 'face.smiling' : 'hand.thumbsdown.fill'} size={25} color={satisfaction === value ? colors.cream : colors.espresso} /></View><Chip label={satisfactionLabel[value]} selected={satisfaction === value} onPress={() => { setSatisfaction(value); setError(''); }} /></View>)}</View>
       <Text variant="title2">어떤 맛이 떠올랐나요?</Text>

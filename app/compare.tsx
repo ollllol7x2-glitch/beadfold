@@ -27,13 +27,12 @@ export default function CompareScreen() {
   }, [beanId, cupIds, db]));
   const chosen = selected.map((id) => cups.find((cup) => cup.id === id)).filter(Boolean) as Cup[];
   useEffect(() => { if (chosen.length === 2) void trackEvent(db, 'compare_completed', { bean_id: beanId ?? null }); }, [beanId, chosen.length, db]);
-  if (cups.length < 2) return <Screen><PageHeader title="두 잔 비교" description="같은 원두로 내린 커피를 나란히 살펴봐요." backLabel="기록" /><EmptyState title="한 잔이 더 필요해요" body="같은 원두로 두 번 내리면 추출값과 맛의 차이를 볼 수 있어요." icon="arrow.left.arrow.right" /></Screen>;
+  if (cups.length < 2) return <Screen header={<PageHeader title="두 잔 비교" description="같은 원두로 내린 커피를 나란히 살펴봐요." backLabel="기록" backHref="/(tabs)/journal" />}><EmptyState title="한 잔이 더 필요해요" body="같은 원두로 두 번 내리면 추출값과 맛의 차이를 볼 수 있어요." icon="arrow.left.arrow.right" /></Screen>;
 
   const scores = chosen.map((cup) => cup.satisfaction ? satisfactionScore[cup.satisfaction] : null);
   const winner = scores[0] != null && scores[1] != null && scores[0] !== scores[1] ? (scores[0]! > scores[1]! ? 0 : 1) : null;
   const insight = winner == null ? '두 기록의 만족도는 같거나 아직 평가하지 않았어요.' : `${winner + 1}번째 커피가 더 잘 맞았어요. 달랐던 조건을 확인해보세요.`;
-  return <Screen contentContainerStyle={styles.screen}>
-    <PageHeader title="두 잔 비교" description="결론을 단정하지 않고 달랐던 조건부터 살펴봐요." backLabel="기록" />
+  return <Screen header={<PageHeader title="두 잔 비교" description="결론을 단정하지 않고 달랐던 조건부터 살펴봐요." backLabel="기록" backHref="/(tabs)/journal" />} contentContainerStyle={styles.screen}>
     <View style={styles.chips}>{cups.map((cup, index) => <Chip key={cup.id} label={`${index + 1}번째, ${new Date(cup.createdAt).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })}`} selected={selected.includes(cup.id)} onPress={() => setSelected((current) => current.includes(cup.id) ? current.filter((id) => id !== cup.id) : current.length < 2 ? [...current, cup.id] : [current[1]!, cup.id])} />)}</View>
     {chosen.length < 2 ? <Text accessibilityRole="alert" color={colors.error}>비교할 기록 두 개를 골라주세요.</Text> : <>
       <Card tone="tinted"><View style={styles.insightTitle}><Icon name="sparkles" size={20} /><Text variant="label">비교 결과</Text></View><Text variant="title2">{insight}</Text></Card>

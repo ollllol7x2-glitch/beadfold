@@ -18,7 +18,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { router, usePathname } from 'expo-router';
+import { router, usePathname, type Href } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -106,23 +106,25 @@ export function BrandMark({ size = 30 }: { size?: number; inverted?: boolean }) 
 
 const hiddenNavPaths = ['/','/brew'];
 
-export function Screen({ children, scroll = true, contentContainerStyle, showNavigation, footer, ...props }: ScrollViewProps & { children: ReactNode; scroll?: boolean; showNavigation?: boolean; footer?: ReactNode }) {
+export function Screen({ children, scroll = true, contentContainerStyle, showNavigation, footer, header, ...props }: ScrollViewProps & { children: ReactNode; scroll?: boolean; showNavigation?: boolean; footer?: ReactNode; header?: ReactNode }) {
   const pathname = usePathname();
   const navigationVisible = showNavigation ?? !hiddenNavPaths.some((path) => pathname === path || (path !== '/' && pathname.startsWith(path)));
+  const hasHeader = Boolean(header);
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', ...(navigationVisible ? [] : ['bottom'] as const)]}>
+      {header ? <View style={styles.screenHeader}>{header}</View> : null}
       {scroll ? (
         <ScrollView
           keyboardShouldPersistTaps="handled"
           contentInsetAdjustmentBehavior="automatic"
           showsVerticalScrollIndicator={false}
           style={styles.scroller}
-          contentContainerStyle={[styles.content, !navigationVisible && styles.contentNoNav, contentContainerStyle]}
+          contentContainerStyle={[styles.content, !navigationVisible && styles.contentNoNav, hasHeader && styles.contentWithHeader, contentContainerStyle]}
           {...props}
         >
           {children}
         </ScrollView>
-      ) : <View style={[styles.content, styles.staticContent, !navigationVisible && styles.contentNoNav, contentContainerStyle]}>{children}</View>}
+      ) : <View style={[styles.content, styles.staticContent, !navigationVisible && styles.contentNoNav, hasHeader && styles.contentWithHeader, contentContainerStyle]}>{children}</View>}
       {footer ?? (navigationVisible ? <AppNavigation /> : null)}
     </SafeAreaView>
   );
@@ -219,12 +221,12 @@ export function Chip({ label, selected, onPress, accessibilityLabel, icon }: { l
   );
 }
 
-export function PageHeader({ eyebrow, title, description, action, backLabel }: { eyebrow?: string; title: string; description?: string; action?: ReactNode; backLabel?: string }) {
+export function PageHeader({ eyebrow, title, description, action, backLabel, backHref }: { eyebrow?: string; title: string; description?: string; action?: ReactNode; backLabel?: string; backHref?: Href }) {
   if (backLabel) {
     return (
       <View style={styles.headerWrap}>
         <View style={styles.compactHeader}>
-          <Pressable accessibilityRole="button" accessibilityLabel={`${backLabel}${directionParticle(backLabel)} 돌아가기`} onPress={() => router.back()} style={styles.headerSide}><Icon name="chevron.left" size={24} /></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={`${backLabel}${directionParticle(backLabel)} 돌아가기`} onPress={() => goBackOrReplace(backHref ?? '/(tabs)')} style={styles.headerSide}><Icon name="chevron.left" size={24} /></Pressable>
           <Text variant="title3" accessibilityRole="header" numberOfLines={1} style={styles.compactHeaderTitle}>{title}</Text>
           <View style={[styles.headerSide, styles.headerAction]}>{action}</View>
         </View>
@@ -260,10 +262,10 @@ export function TaskHeader({ title, description, onClose, closeLabel = '닫기' 
   );
 }
 
-export function TopBar({ title, backLabel, action }: { title: string; backLabel?: string; action?: ReactNode }) {
+export function TopBar({ title, backLabel, backHref, action }: { title: string; backLabel?: string; backHref?: Href; action?: ReactNode }) {
   return (
     <View style={styles.topBar}>
-      {backLabel ? <Pressable accessibilityRole="button" accessibilityLabel={`${backLabel}${directionParticle(backLabel)} 돌아가기`} onPress={() => router.back()} style={styles.topBarSide}><Icon name="chevron.left" size={18} /><Text variant="label">{backLabel}</Text></Pressable> : <View style={styles.topBarSide} />}
+      {backLabel ? <Pressable accessibilityRole="button" accessibilityLabel={`${backLabel}${directionParticle(backLabel)} 돌아가기`} onPress={() => goBackOrReplace(backHref ?? '/(tabs)')} style={styles.topBarSide}><Icon name="chevron.left" size={18} /><Text variant="label">{backLabel}</Text></Pressable> : <View style={styles.topBarSide} />}
       <Text variant="title3" accessibilityRole="header" numberOfLines={1} style={styles.topBarTitle}>{title}</Text>
       <View style={[styles.topBarSide, styles.topBarRight]}>{action}</View>
     </View>
@@ -275,6 +277,12 @@ function directionParticle(value: string) {
   if (last < 0xac00 || last > 0xd7a3) return '로';
   const finalConsonant = (last - 0xac00) % 28;
   return finalConsonant !== 0 && finalConsonant !== 8 ? '으로' : '로';
+}
+
+/** Preserve the actual previous context when it exists, but never strand a direct URL visit. */
+export function goBackOrReplace(fallback: Href) {
+  if (router.canGoBack()) router.back();
+  else router.replace(fallback);
 }
 
 export function SectionTitle({ title, action }: { title: string; action?: ReactNode }) {
@@ -396,7 +404,9 @@ const styles = StyleSheet.create({
   scroller: { flex: 1 },
   staticContent: { flex: 1 },
   content: { flexGrow: 1, paddingHorizontal: 20, paddingTop: spacing.small, paddingBottom: spacing.large, gap: spacing.roomy },
+  contentWithHeader: { paddingTop: spacing.default },
   contentNoNav: { paddingBottom: spacing.section },
+  screenHeader: { zIndex: 2, paddingHorizontal: 20, paddingTop: spacing.compact, paddingBottom: spacing.small, backgroundColor: colors.cream, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.neutral200 },
   card: { backgroundColor: colors.white, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.neutral200, borderRadius: radius.large, padding: spacing.default, gap: spacing.small, ...shadows.soft },
   cardTinted: { backgroundColor: colors.creamDeep, borderColor: colors.warmBeige },
   cardDark: { backgroundColor: colors.espresso, borderColor: colors.espresso },

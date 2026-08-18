@@ -3,7 +3,7 @@ import { Image, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import * as ImagePicker from 'expo-image-picker';
-import { BottomActionBar, Button, Chip, Field, Screen, TaskHeader, Text } from '@/components/ui';
+import { BottomActionBar, Button, Chip, Field, goBackOrReplace, Screen, TaskHeader, Text } from '@/components/ui';
 import { createCafeCup, deleteCup, getCup, updateCafeCup } from '@/database/repository';
 import { localizedFlavor, satisfactionLabel, type Satisfaction } from '@/domain/types';
 import { colors, spacing } from '@/design-system/tokens';
@@ -112,8 +112,7 @@ export default function RecordCafeScreen() {
   if (loading) return <Screen showNavigation={false}><Text>카페 기록을 불러오고 있어요.</Text></Screen>;
 
   return (
-      <Screen showNavigation={false} footer={<BottomActionBar primaryLabel={cupId ? '변경사항 저장' : '기록 저장'} primaryLoading={saving} onPrimaryPress={() => void save()} />}>
-        <TaskHeader title={cupId ? '카페 기록 수정' : '카페에서 마신 커피'} description={cupId ? '바뀐 내용만 고쳐주세요.' : '기억하고 싶은 것만 간단히 남겨보세요.'} onClose={() => requestExit(() => router.back())} />
+      <Screen showNavigation={false} header={<TaskHeader title={cupId ? '카페 기록 수정' : '카페에서 마신 커피'} description={cupId ? '바뀐 내용만 고쳐주세요.' : '기억하고 싶은 것만 간단히 남겨보세요.'} onClose={() => requestExit(() => goBackOrReplace('/(tabs)/journal'))} />} footer={<BottomActionBar primaryLabel={cupId ? '변경사항 저장' : '기록 저장'} primaryLoading={saving} onPrimaryPress={() => void save()} />}>
         {error ? <Text accessibilityRole="alert" color={colors.error}>{error}</Text> : null}
         {imageUri ? <Image source={{ uri: imageUri }} style={styles.photo} accessibilityLabel="커피 사진" /> : null}
         <Button label={imageUri ? '사진 바꾸기' : '사진 추가'} variant="secondary" icon="camera.fill" onPress={() => void pickImage()} />

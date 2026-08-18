@@ -48,8 +48,7 @@ export default function GuidedRecipeScreen() {
   const gearNames = ['grinder', 'dripper'].map((category) => gear.find((item) => item.category === category)?.name).filter(Boolean);
 
   return (
-    <Screen contentContainerStyle={styles.screen} footer={<BottomActionBar primaryLabel="안내 시작하기" onPrimaryPress={() => void begin()} secondaryLabel="직접 조절" onSecondaryPress={() => router.push(`/recipe/manual?beanId=${bean.id}`)} />}>
-      <TopBar title="오늘의 레시피" backLabel="원두" />
+    <Screen header={<TopBar title="오늘의 레시피" backLabel="원두" backHref={`/bean/${bean.id}`} />} contentContainerStyle={styles.screen} footer={<BottomActionBar primaryLabel="안내 시작하기" onPrimaryPress={() => void begin()} secondaryLabel="직접 조절" onSecondaryPress={() => router.push(`/recipe/manual?beanId=${bean.id}`)} />}>
 
       <Pressable accessibilityRole="button" accessibilityLabel={`${bean.name} 원두 정보 보기`} onPress={() => router.push(`/bean/${bean.id}`)} style={styles.beanStrip}>
         <Image source={bean.imageUri ? { uri: bean.imageUri } : require('../../assets/visuals/bean-still-life.png')} style={styles.beanImage} resizeMode="cover" />

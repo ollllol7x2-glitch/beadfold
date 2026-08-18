@@ -45,8 +45,7 @@ export default function BeanDetailScreen() {
   const preparation = [bean.process, bean.roastLevel === 'unknown' ? '' : roastLevelLabel[bean.roastLevel]].filter(Boolean).join(' · ');
 
   return (
-    <Screen>
-      <PageHeader title={bean.name} description={[bean.roaster, bean.country, bean.region].filter(Boolean).join(' · ') || '직접 등록한 원두'} backLabel="보관함" />
+    <Screen header={<PageHeader title={bean.name} description={[bean.roaster, bean.country, bean.region].filter(Boolean).join(' · ') || '직접 등록한 원두'} backLabel="보관함" backHref="/(tabs)/collection" />}>
       <Card style={styles.hero}>
         <Text variant="label">{preparation || '가공·로스팅 정보 미입력'}</Text>
         <Text variant="title1">{bean.remainingWeightG}g</Text>

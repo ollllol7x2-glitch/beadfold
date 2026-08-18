@@ -30,8 +30,7 @@ export default function CupDetailScreen() {
   }, [db, id]));
   if (!cup) return <Screen><EmptyState title="기록을 찾을 수 없어요" body="기록 탭에서 다른 커피를 골라주세요." /></Screen>;
   const tasteEntries = (Object.entries(cup.taste) as [keyof TasteValues, number | null][]).filter((entry) => entry[1] != null);
-  return <Screen>
-    <PageHeader title={cup.beanName} description={new Date(cup.createdAt).toLocaleString('ko-KR')} backLabel="기록" />
+  return <Screen header={<PageHeader title={cup.beanName} description={new Date(cup.createdAt).toLocaleString('ko-KR')} backLabel="기록" backHref="/(tabs)/journal" />}>
     {cup.imageUri ? <Image source={{ uri: cup.imageUri }} style={styles.photo} accessibilityLabel="이 커피의 사진" /> : null}
     <Card style={styles.hero}><Text variant="title1">{cup.satisfaction ? satisfactionLabel[cup.satisfaction] : '아직 맛을 남기지 않았어요'}</Text><Text>{cup.flavorTags.map(localizedFlavor).join(' · ') || '떠오른 맛은 나중에 추가해도 돼요.'}</Text></Card>
     {cup.recipeSnapshot ? <Card><Text variant="title2">핵심 추출값</Text><View style={styles.metrics}><Metric label="원두" value={`${cup.recipeSnapshot.doseG}g`} /><Metric label="물" value={`${cup.recipeSnapshot.waterMl}ml`} /><Metric label="온도" value={`${cup.recipeSnapshot.temperatureC}℃`} /><Metric label="시간" value={`${Math.floor(cup.recipeSnapshot.totalTimeSec / 60)}분 ${cup.recipeSnapshot.totalTimeSec % 60}초`} /></View><Text variant="title3">사용한 조건</Text><Detail label="분쇄도" value={cup.recipeSnapshot.grindTarget} /><Detail label="드리퍼" value={cup.recipeSnapshot.dripper} /><Detail label="필터" value={cup.recipeSnapshot.filter} /></Card> : null}
