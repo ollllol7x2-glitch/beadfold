@@ -174,7 +174,7 @@ export function generateGuidedRecipe(input: GuidedRecipeInput): Recipe {
     temperatureC = round((temperatureC + preferred.temperatureC) / 2);
     totalTimeSec = round((totalTimeSec + preferred.totalTimeSec) / 2);
     grindTarget = preferred.grindTarget;
-    explanations.push('이 원두로 좋았다고 남긴 최근 기록을 반영해 이전 추출값에 가까운 시작점을 골랐어요.');
+    explanations.push('이 원두로 좋았다고 남긴 최근 기록과 현재 원두·장비 조건의 중간 지점에서 시작해요.');
   }
 
   ratio = round(clamp(ratio, 13, 18), 1);

@@ -39,7 +39,7 @@ export default function RecordCupScreen() {
     setSaving(true);
     try {
       await recordCupFeedback(db, cup.id, { satisfaction, flavorTags: tags, taste, memo: memo.trim(), imageUri });
-      showFeedback(cup.satisfaction ? '맛 기록을 수정했어요.' : '맛 기록을 저장했어요.');
+      showFeedback(satisfaction === 'loved' ? '좋았던 추출값을 다음 추천에 반영할게요.' : cup.satisfaction ? '맛 기록을 수정했어요.' : '맛 기록을 저장했어요.');
       allowExit();
       router.replace('/(tabs)/journal');
     } finally {
