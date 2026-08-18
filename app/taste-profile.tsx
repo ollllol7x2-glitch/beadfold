@@ -307,8 +307,8 @@ function BeanSelectionGuide({ profile }: { profile: TasteProfile }) {
             <View style={styles.recommendationCopy}>
               <Text variant="title3">{recommendationTitle(recommendation)}</Text>
               <Text variant="caption" color={colors.neutral600}>{recommendationDetail(recommendation)}</Text>
-              <View style={styles.noteRow}>{recommendation.tastingNotes.map((note) => <View key={note} style={styles.noteTag}><Text variant="caption" color={colors.neutral800}>{note}</Text></View>)}</View>
-              <Text color={colors.neutral800}>{recommendation.reason}</Text>
+              <View style={styles.noteRow}>{recommendation.tastingNotes.map((note) => <View key={note} style={styles.noteTag}><Text variant="caption" color={colors.neutral600}>{note}</Text></View>)}</View>
+              <Text color={colors.neutral600}>{recommendation.reason}</Text>
             </View>
           </View>
         ))}

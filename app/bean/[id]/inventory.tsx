@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { Button, Card, Field, PageHeader, Screen, Text } from '@/components/ui';
+import { Button, Card, Field, InfoNote, PageHeader, Screen, Text } from '@/components/ui';
 import { adjustBeanInventory, getBean } from '@/database/repository';
-import { colors, spacing } from '@/design-system/tokens';
+import { spacing } from '@/design-system/tokens';
 import { useFeedback } from '@/components/feedback';
 
 export default function BeanInventoryScreen() {
@@ -29,10 +29,10 @@ export default function BeanInventoryScreen() {
   };
 
   return <Screen header={<PageHeader title="재고 맞추기" backLabel="원두" backHref={`/bean/${id}`} />} contentContainerStyle={styles.screen}>
-    <Card><Text variant="title2">{beanName || '원두'}</Text><Text color={colors.neutral800}>봉투의 실제 무게를 확인한 뒤 남은 양을 맞춰주세요.</Text><Field label="실제 남은 양 (g)" value={weight} onChangeText={(value) => { setWeight(value); setError(''); }} keyboardType="decimal-pad" error={error} /></Card>
-    <View style={styles.note}><Text variant="label">재고 이력에 남겨요</Text><Text color={colors.neutral800}>입력한 양과 이전 재고의 차이를 기록합니다.</Text></View>
+    <Card><Text variant="title2">{beanName || '원두'}</Text><InfoNote body="봉투의 실제 무게를 확인한 뒤 남은 양을 맞춰주세요." /><Field label="실제 남은 양 (g)" value={weight} onChangeText={(value) => { setWeight(value); setError(''); }} keyboardType="decimal-pad" error={error} /></Card>
+    <InfoNote body="입력한 양과 이전 재고의 차이를 재고 이력에 기록합니다." />
     <Button label="재고 저장" onPress={() => void save()} />
   </Screen>;
 }
 
-const styles = StyleSheet.create({ screen: { gap: spacing.section }, note: { gap: spacing.compact, paddingHorizontal: spacing.small } });
+const styles = StyleSheet.create({ screen: { gap: spacing.section } });

@@ -141,7 +141,7 @@ export default function BrewScreen() {
       <View accessible accessibilityLiveRegion="polite" accessibilityLabel={`${projection.step.name}. 남은 시간 ${formatDuration(projection.stepRemainingMs)}. 전체 ${formatDuration(projection.totalElapsedMs)} 경과.`} style={[styles.timerZone, compact && styles.timerZoneCompact]}>
         <Text variant="label" color={colors.neutral600}>{session.pausedAt ? '잠시 멈춤' : '남은 시간'}</Text>
         <Text style={[styles.heroTimer, compact && styles.heroTimerCompact]} adjustsFontSizeToFit minimumFontScale={0.72}>{formatDuration(projection.stepRemainingMs)}</Text>
-        <Text variant="bodyLarge" color={colors.neutral800} style={styles.elapsedTime}>전체 {formatDuration(projection.totalElapsedMs)} / {formatDuration(session.recipeSnapshot.totalTimeSec * 1000)}</Text>
+        <Text variant="bodyLarge" color={colors.neutral600} style={styles.elapsedTime}>전체 {formatDuration(projection.totalElapsedMs)} / {formatDuration(session.recipeSnapshot.totalTimeSec * 1000)}</Text>
         <View style={styles.stepProgress}>
           {session.recipeSnapshot.steps.map((step, index) => {
             const fill = index < projection.stepIndex ? 1 : index === projection.stepIndex ? stepProgress : 0;
@@ -193,7 +193,7 @@ function ReadyState({ session, compact, onStart, onReview }: { session: BrewSess
   const recipe = session.recipeSnapshot;
   return (
     <View style={styles.readyBody}>
-      <View style={styles.readyHeading}><Text variant="title1" accessibilityRole="header">도구를 준비해주세요</Text><Text color={colors.neutral800}>아직 타이머는 시작되지 않았어요.</Text></View>
+      <View style={styles.readyHeading}><Text variant="title1" accessibilityRole="header">도구를 준비해주세요</Text><Text color={colors.neutral600}>아직 타이머는 시작되지 않았어요.</Text></View>
       <View style={styles.checks}>
         <ReadyItem icon="leaf.fill" label="원두" value={`${recipe.doseG}g`} />
         <ReadyItem icon="drop.fill" label="물" value={`${recipe.waterMl}ml · ${recipe.temperatureC}℃`} />
@@ -213,7 +213,7 @@ function ReadyItem({ icon, label, value }: { icon: Parameters<typeof Icon>[0]['n
 }
 
 function CountdownState({ value }: { value: number }) {
-  return <View style={styles.countdown} accessible accessibilityLiveRegion="assertive"><Text variant="label" color={colors.neutral600}>주전자와 저울을 잡아주세요</Text><Text style={styles.countdownNumber}>{value || '시작'}</Text><Text variant="bodyLarge" color={colors.neutral800}>첫 단계는 뜸 들이기예요.</Text></View>;
+  return <View style={styles.countdown} accessible accessibilityLiveRegion="assertive"><Text variant="label" color={colors.neutral600}>주전자와 저울을 잡아주세요</Text><Text style={styles.countdownNumber}>{value || '시작'}</Text><Text variant="bodyLarge" color={colors.neutral600}>첫 단계는 뜸 들이기예요.</Text></View>;
 }
 
 function Metric({ label, value }: { label: string; value: string }) {

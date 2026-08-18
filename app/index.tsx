@@ -65,7 +65,7 @@ export default function OnboardingScreen() {
           </ImageBackground>
           <View style={styles.heading}>
             <Text variant="display" accessibilityRole="header">커피, 얼마나{`\n`}익숙하세요?</Text>
-            <Text variant="bodyLarge" color={colors.neutral800}>지금 수준에 맞춰 첫 화면과 설명을 바꿔드릴게요.</Text>
+            <Text variant="bodyLarge" color={colors.neutral600}>지금 수준에 맞춰 첫 화면과 설명을 바꿔드릴게요.</Text>
           </View>
           <View style={styles.choices}>{experienceOptions.map((option) => <Choice key={option.value} {...option} selected={experience === option.value} onPress={() => setExperience(option.value)} />)}</View>
         </>
@@ -77,7 +77,7 @@ export default function OnboardingScreen() {
           </View>
           <View style={styles.heading}>
             <Text variant="display" accessibilityRole="header">어떤 한 잔을{`\n`}원하세요?</Text>
-            <Text variant="bodyLarge" color={colors.neutral800}>고른 답은 언제든 마이페이지에서 바꿀 수 있어요.</Text>
+            <Text variant="bodyLarge" color={colors.neutral600}>고른 답은 언제든 마이페이지에서 바꿀 수 있어요.</Text>
           </View>
           <View style={styles.choices}>{goalOptions.map((option) => <Choice key={option.value} {...option} selected={goal === option.value} onPress={() => setGoal(option.value)} />)}</View>
         </>
@@ -96,7 +96,7 @@ export default function OnboardingScreen() {
           </View>
           <View style={styles.heading}>
             <Text variant="display" accessibilityRole="header">준비됐어요.</Text>
-            <Text variant="bodyLarge" color={colors.neutral800}>{experience === 'beginner' ? '첫 원두부터 한 단계씩 함께할게요.' : experience === 'casual' ? '필요한 추천만 빠르게 보여드릴게요.' : '자주 쓰는 변수와 기록을 바로 꺼내드릴게요.'}</Text>
+            <Text variant="bodyLarge" color={colors.neutral600}>{experience === 'beginner' ? '첫 원두부터 한 단계씩 함께할게요.' : experience === 'casual' ? '필요한 추천만 빠르게 보여드릴게요.' : '자주 쓰는 변수와 기록을 바로 꺼내드릴게요.'}</Text>
           </View>
           <View style={styles.preview}>
             <PreviewStep number="1" icon="leaf.fill" title="원두 고르기" />
@@ -121,7 +121,7 @@ function Choice({ title, body, icon, selected, onPress }: { title: string; body:
   return (
     <Pressable accessibilityRole="radio" accessibilityState={{ checked: selected }} onPress={onPress} style={({ pressed }) => [styles.choice, selected && styles.choiceSelected, pressed && styles.pressed]}>
       <View style={styles.choiceIcon}><Icon name={icon} size={28} color={colors.espresso} /></View>
-      <View style={styles.choiceCopy}><Text variant="title3">{title}</Text><Text color={colors.neutral800}>{body}</Text></View>
+      <View style={styles.choiceCopy}><Text variant="title3">{title}</Text><Text color={colors.neutral600}>{body}</Text></View>
       {selected ? <View style={styles.check}><Icon name="checkmark" size={16} color={colors.cream} weight="bold" /></View> : <View style={styles.radio} />}
     </Pressable>
   );

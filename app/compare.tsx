@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { EmptyState, Icon, PageHeader, Screen, Text } from '@/components/ui';
+import { EmptyState, Icon, InfoNote, PageHeader, Screen, Text } from '@/components/ui';
 import { listCups, trackEvent } from '@/database/repository';
 import { localizedFlavor, satisfactionLabel, satisfactionScore, type Cup, type TasteValues } from '@/domain/types';
 import { colors, radius, spacing } from '@/design-system/tokens';
@@ -44,7 +44,7 @@ export default function CompareScreen() {
   const introTitle = isSameBean ? beanNames[0] ?? cups[0]!.beanName : '서로 다른 원두';
   const introBody = isSameBean ? '한 원두 안에서 달라진 추출 조건과 맛을 비교해요.' : `${beanNames.join(' · ')}. 원두와 추출 조건, 맛을 함께 비교해요.`;
   return <Screen header={<PageHeader title="두 잔 비교" backLabel="기록" backHref="/(tabs)/journal" />} contentContainerStyle={styles.screen}>
-    <View style={styles.intro}><Text variant="title1">{introTitle}</Text><Text color={colors.neutral800}>{introBody}</Text></View>
+    <View style={styles.intro}><Text variant="title1">{introTitle}</Text><InfoNote body={introBody} /></View>
     <View style={styles.selector}>
       <Text variant="label">비교할 두 잔</Text>
       <View style={styles.cupSelectors}>{cups.map((cup) => <CompareCupOption key={cup.id} cup={cup} selected={selected.includes(cup.id)} onPress={() => setSelected((current) => current.includes(cup.id) ? current.filter((id) => id !== cup.id) : current.length < 2 ? [...current, cup.id] : [current[1]!, cup.id])} />)}</View>
@@ -53,7 +53,7 @@ export default function CompareScreen() {
       <ResultSummary cups={chosen} winner={winner} />
       <DifferenceSection title="달라진 추출값" differences={variables} empty="두 잔의 추출 조건이 같아요." />
       <DifferenceSection title="맛의 차이" differences={tastes} empty="세부 맛 점수는 같거나 아직 기록하지 않았어요." />
-      {winningCup?.beanId && winningCup.recipeSnapshot ? <Pressable accessibilityRole="button" accessibilityLabel={`${winningCup.beanName}의 더 좋았던 기록으로 다시 내리기`} onPress={() => router.push(`/recipe/manual?beanId=${winningCup.beanId}&sourceCupId=${winningCup.id}`)} style={({ pressed }) => [styles.repeatAction, pressed && styles.pressed]}><View style={styles.repeatActionIcon}><Icon name="arrow.clockwise" size={20} color={colors.cream} /></View><View style={styles.repeatActionCopy}><Text variant="label">더 좋았던 기록으로 다시 내리기</Text><Text variant="caption" color={colors.neutral800}>{winningCup.beanName}의 추출값을 시작점으로 가져와요.</Text></View><Icon name="chevron.right" size={17} color={colors.espresso} /></Pressable> : null}
+      {winningCup?.beanId && winningCup.recipeSnapshot ? <Pressable accessibilityRole="button" accessibilityLabel={`${winningCup.beanName}의 더 좋았던 기록으로 다시 내리기`} onPress={() => router.push(`/recipe/manual?beanId=${winningCup.beanId}&sourceCupId=${winningCup.id}`)} style={({ pressed }) => [styles.repeatAction, pressed && styles.pressed]}><View style={styles.repeatActionIcon}><Icon name="arrow.clockwise" size={20} color={colors.cream} /></View><View style={styles.repeatActionCopy}><Text variant="label">더 좋았던 기록으로 다시 내리기</Text><Text variant="caption" color={colors.neutral600}>{winningCup.beanName}의 추출값을 시작점으로 가져와요.</Text></View><Icon name="chevron.right" size={17} color={colors.espresso} /></Pressable> : null}
     </>}
   </Screen>;
 }
@@ -64,7 +64,7 @@ function ResultSummary({ cups, winner }: { cups: Cup[]; winner: number | null })
 }
 
 function DifferenceSection({ title, differences, empty }: { title: string; differences: Difference[]; empty: string }) {
-  return <View style={styles.section}><Text variant="title2">{title}</Text>{differences.length ? <View style={styles.differenceList}>{differences.map((difference) => <DifferenceRow key={difference.label} difference={difference} />)}</View> : <Text color={colors.neutral800}>{empty}</Text>}</View>;
+  return <View style={styles.section}><Text variant="title2">{title}</Text>{differences.length ? <View style={styles.differenceList}>{differences.map((difference) => <DifferenceRow key={difference.label} difference={difference} />)}</View> : <InfoNote body={empty} />}</View>;
 }
 
 function DifferenceRow({ difference }: { difference: Difference }) {

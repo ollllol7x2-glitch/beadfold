@@ -33,7 +33,7 @@ export default function RootLayout() {
   }
   if (databaseError) {
     const locked = /Access Handle|NoModificationAllowed|locked/i.test(databaseError.message);
-    return <View style={{ flex: 1, padding: 24, justifyContent: 'center', gap: 16, backgroundColor: colors.cream }}><Text variant="title1" accessibilityRole="header">{locked ? 'BEANFOLD가 다른 탭에서 열려 있어요' : '저장 공간을 열지 못했어요'}</Text><Text color={colors.neutral800}>{locked ? '기록을 안전하게 지키기 위해 한 번에 한 탭에서 사용해주세요. 다른 탭을 닫고 이 페이지를 새로고침하세요.' : databaseError.message}</Text></View>;
+    return <View style={{ flex: 1, padding: 24, justifyContent: 'center', gap: 16, backgroundColor: colors.cream }}><Text variant="title1" accessibilityRole="header">{locked ? 'BEANFOLD가 다른 탭에서 열려 있어요' : '저장 공간을 열지 못했어요'}</Text><Text color={colors.neutral600}>{locked ? '기록을 안전하게 지키기 위해 한 번에 한 탭에서 사용해주세요. 다른 탭을 닫고 이 페이지를 새로고침하세요.' : databaseError.message}</Text></View>;
   }
 
   return (

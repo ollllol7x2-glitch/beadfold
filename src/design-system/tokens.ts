@@ -14,7 +14,7 @@ export const colors = {
   charcoal: '#282521',
   neutral950: '#1A1714',
   neutral800: '#594F49',
-  neutral600: '#726761',
+  neutral600: '#8C827B',
   neutral400: '#AAA29F',
   neutral200: '#E1DBD3',
   neutral100: '#F0ECE6',

@@ -172,7 +172,7 @@ export default function AddBeanScreen() {
   if (saved) {
     return <Screen showNavigation={false} contentContainerStyle={styles.successScreen}>
       <View style={styles.successIcon}><Icon name="checkmark" size={32} color={colors.cream} weight="bold" /></View>
-      <View style={styles.successCopy}><Text variant="title1" accessibilityRole="header">원두를 추가했어요</Text><Text variant="bodyLarge" color={colors.neutral800}>{saved.name}. 지금 바로 내리거나, 정보를 더 채울 수 있어요.</Text></View>
+      <View style={styles.successCopy}><Text variant="title1" accessibilityRole="header">원두를 추가했어요</Text><Text variant="bodyLarge" color={colors.neutral600}>{saved.name}. 지금 바로 내리거나, 정보를 더 채울 수 있어요.</Text></View>
       <Button label="이 원두로 바로 내리기" icon="cup.and.heat.waves.fill" onPress={() => { router.dismissAll(); router.push(`/recipe/guided?beanId=${saved.id}`); }} />
       <Button label="원두 정보 더 입력하기" variant="secondary" onPress={() => { setExisting(saved); setBaseline(beanFormSnapshot(saved)); setSaved(null); setDetailsOpen(true); }} />
       <Button label="보관함에서 보기" variant="tertiary" onPress={() => { router.dismissAll(); router.push('/(tabs)/collection'); }} />
@@ -193,18 +193,18 @@ export default function AddBeanScreen() {
     </Card> : null}
 
     {imageUri ? <Image source={{ uri: imageUri }} style={styles.preview} accessibilityLabel="선택한 원두 패키지 사진" /> : null}
-    {recognizing ? <Card tone="tinted"><View style={styles.scanStatus}><Icon name="magnifyingglass" size={21} color={colors.espresso} /><View style={styles.flex}><Text variant="title3">봉투 정보 확인 중</Text><Text color={colors.neutral800}>원두명과 산지, 로스팅 정보를 읽고 있어요.</Text></View></View></Card> : null}
-    {status ? <Text accessibilityLiveRegion="polite" color={colors.neutral800}>{status}</Text> : null}
+    {recognizing ? <Card tone="tinted"><View style={styles.scanStatus}><Icon name="magnifyingglass" size={21} color={colors.espresso} /><View style={styles.flex}><Text variant="title3">봉투 정보 확인 중</Text><Text color={colors.neutral600}>원두명과 산지, 로스팅 정보를 읽고 있어요.</Text></View></View></Card> : null}
+    {status ? <Text accessibilityLiveRegion="polite" color={colors.neutral600}>{status}</Text> : null}
     {error ? <Text accessibilityRole="alert" color={colors.error}>{error}</Text> : null}
 
     <Card style={styles.quickCard}>
-      <View><Text variant="title2">빠른 추가</Text><Text color={colors.neutral800}>두 가지만 입력하면 저장할 수 있어요.</Text></View>
+      <View><Text variant="title2">빠른 추가</Text><Text color={colors.neutral600}>두 가지만 입력하면 저장할 수 있어요.</Text></View>
       <Field label="원두 이름" value={name} onChangeText={(value) => { setName(value); setError(''); }} placeholder="예: 과테말라 엘 인헤르토" />
       <Field label="남은 양 (g)" value={weight} onChangeText={(value) => { setWeight(value); setError(''); }} keyboardType="decimal-pad" placeholder="예: 200" hint="봉투에 남은 양을 대략 적어도 괜찮아요." />
     </Card>
 
     <Pressable accessibilityRole="button" accessibilityLabel={`원두 정보 더 입력하기, 현재 ${detailsOpen ? '펼쳐짐' : '접힘'}`} onPress={() => setDetailsOpen((current) => !current)} style={styles.disclosure}>
-      <View style={styles.disclosureCopy}><Text variant="title3">원두 정보 더 입력하기</Text><Text color={colors.neutral800}>산지, 가공법, 로스팅 정보는 선택 사항이에요.</Text></View>
+      <View style={styles.disclosureCopy}><Text variant="title3">원두 정보 더 입력하기</Text><Text color={colors.neutral600}>산지, 가공법, 로스팅 정보는 선택 사항이에요.</Text></View>
       <Icon name={detailsOpen ? 'chevron.up' : 'chevron.down'} size={22} />
     </Pressable>
 

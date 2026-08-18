@@ -97,7 +97,7 @@ export default function HomeScreen() {
 
       <View style={styles.greeting}>
         <Text variant="title1" accessibilityRole="header">{timeGreeting}</Text>
-        <Text variant="bodyLarge" color={colors.neutral800}>{greeting}</Text>
+        <Text variant="bodyLarge" color={colors.neutral600}>{greeting}</Text>
       </View>
 
       {interrupted ? (
@@ -139,8 +139,8 @@ export default function HomeScreen() {
       {suggestedAction ? <NextAction {...suggestedAction} onPress={() => router.push(suggestedAction.path as never)} /> : null}
 
       <SectionTitle title="최근에 내린 커피" action={<Button label="전체 보기" variant="tertiary" onPress={() => router.push('/(tabs)/journal')} />} />
-      {cups.length ? <View style={styles.cupList}>{cups.slice(0, 3).map((cup, index) => <CupRow key={cup.id} cup={cup} imageOffset={index} showDivider={index > 0} />)}</View> : <Card tone="tinted"><View style={styles.emptyCup}><Icon name="cup.and.saucer" size={30} color={colors.espresso} /><View style={styles.flex}><Text variant="title3">아직 기록이 없어요</Text><Text color={colors.neutral800}>첫 브루잉이 끝나면 여기에 바로 나타나요.</Text></View></View></Card>}
-      <BottomSheet visible={beanPickerOpen} title="어떤 원두로 내릴까요?" onClose={() => setBeanPickerOpen(false)}><View style={styles.pickerList}>{availableBeans.map((bean) => <Pressable key={bean.id} accessibilityRole="button" accessibilityLabel={`${bean.name}로 내리기`} onPress={() => { setBeanPickerOpen(false); router.push(`/recipe/guided?beanId=${bean.id}`); }} style={styles.pickerItem}><View style={styles.pickerIcon}><Icon name="leaf.fill" size={22} /></View><View style={styles.flex}><Text variant="title3">{bean.name}</Text><Text variant="caption" color={colors.neutral800}>{bean.remainingWeightG}g 남음{bean.roaster ? ` · ${bean.roaster}` : ''}</Text></View><Icon name="chevron.right" size={18} color={colors.neutral600} /></Pressable>)}</View></BottomSheet>
+      {cups.length ? <View style={styles.cupList}>{cups.slice(0, 3).map((cup, index) => <CupRow key={cup.id} cup={cup} imageOffset={index} showDivider={index > 0} />)}</View> : <Card tone="tinted"><View style={styles.emptyCup}><Icon name="cup.and.saucer" size={30} color={colors.espresso} /><View style={styles.flex}><Text variant="title3">아직 기록이 없어요</Text><Text color={colors.neutral600}>첫 브루잉이 끝나면 여기에 바로 나타나요.</Text></View></View></Card>}
+      <BottomSheet visible={beanPickerOpen} title="어떤 원두로 내릴까요?" onClose={() => setBeanPickerOpen(false)}><View style={styles.pickerList}>{availableBeans.map((bean) => <Pressable key={bean.id} accessibilityRole="button" accessibilityLabel={`${bean.name}로 내리기`} onPress={() => { setBeanPickerOpen(false); router.push(`/recipe/guided?beanId=${bean.id}`); }} style={styles.pickerItem}><View style={styles.pickerIcon}><Icon name="leaf.fill" size={22} /></View><View style={styles.flex}><Text variant="title3">{bean.name}</Text><Text variant="caption" color={colors.neutral600}>{bean.remainingWeightG}g 남음{bean.roaster ? ` · ${bean.roaster}` : ''}</Text></View><Icon name="chevron.right" size={18} color={colors.neutral600} /></Pressable>)}</View></BottomSheet>
     </Screen>
   );
 }
@@ -166,7 +166,7 @@ function TodayRecipePreview({ recipe }: { recipe: Recipe }) {
   ];
   return (
     <View accessible accessibilityLabel={`오늘의 추천 레시피. 원두 ${recipe.doseG}그램, 물 ${recipe.waterMl}밀리리터, ${recipe.temperatureC}도, 총 ${formatDuration(recipe.totalTimeSec)}`} style={styles.recipePreview}>
-      <View style={styles.recipePreviewHeading}><View style={styles.recipePreviewIcon}><Icon name="sparkles" size={15} color={colors.espresso} /></View><View style={styles.flex}><Text variant="label">오늘의 시작점</Text><Text variant="caption" color={colors.neutral800} numberOfLines={1}>{recipe.grindTarget} · {recipe.steps.filter((step) => step.waterDeltaMl > 0).length}번 나눠 붓기</Text></View></View>
+      <View style={styles.recipePreviewHeading}><View style={styles.recipePreviewIcon}><Icon name="sparkles" size={15} color={colors.espresso} /></View><View style={styles.flex}><Text variant="label">오늘의 시작점</Text><Text variant="caption" color={colors.neutral600} numberOfLines={1}>{recipe.grindTarget} · {recipe.steps.filter((step) => step.waterDeltaMl > 0).length}번 나눠 붓기</Text></View></View>
       <View style={styles.recipeMetrics}>{metrics.map((metric, index) => <View key={metric.label} style={[styles.recipeMetric, index < metrics.length - 1 && styles.recipeMetricDivider]}><Text variant="caption" color={colors.neutral600}>{metric.label}</Text><Text variant="label">{metric.value}</Text></View>)}</View>
     </View>
   );
@@ -185,7 +185,7 @@ function roastAgeLabel(roastDate: string | null) {
 }
 
 function NextAction({ icon, eyebrow, title, body, label, actionIcon, onPress }: { icon: Parameters<typeof Icon>[0]['name']; eyebrow?: string; title: string; body: string; label?: string; actionIcon?: Parameters<typeof Icon>[0]['name']; onPress: () => void }) {
-  return <Card tone="tinted" style={styles.nextAction}><View style={styles.nextIcon}><Icon name={icon} size={22} color={colors.espresso} /></View><View style={styles.flex}>{eyebrow ? <Text variant="caption" color={colors.cocoa}>{eyebrow}</Text> : null}<Text variant="title3">{title}</Text><Text variant="caption" color={colors.neutral800}>{body}</Text></View>{actionIcon ? <IconButton name={actionIcon} label={label ?? title} onPress={onPress} /> : label ? <Button label={label} variant="tertiary" onPress={onPress} style={styles.nextButton} /> : null}</Card>;
+  return <Card tone="tinted" style={styles.nextAction}><View style={styles.nextIcon}><Icon name={icon} size={22} color={colors.espresso} /></View><View style={styles.flex}>{eyebrow ? <Text variant="caption" color={colors.cocoa}>{eyebrow}</Text> : null}<Text variant="title3">{title}</Text><Text variant="caption" color={colors.neutral600}>{body}</Text></View>{actionIcon ? <IconButton name={actionIcon} label={label ?? title} onPress={onPress} /> : label ? <Button label={label} variant="tertiary" onPress={onPress} style={styles.nextButton} /> : null}</Card>;
 }
 
 function BeginnerPath({ hasBean, beanId, cupCount }: { hasBean: boolean; beanId?: string; cupCount: number }) {
@@ -217,7 +217,7 @@ function CupRow({ cup, imageOffset, showDivider }: { cup: Cup; imageOffset: numb
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`${cup.beanName} 기록 보기`} onPress={() => router.push(`/cup/${cup.id}`)} style={({ pressed }) => [styles.cupRow, showDivider && styles.cupRowDivided, pressed && styles.pressed]}>
       <View style={styles.thumbnail}><Image source={require('../../assets/visuals/bean-still-life.png')} resizeMode="cover" style={[styles.thumbnailImage, { transform: [{ scale: 1.25 + imageOffset * 0.04 }] }]} /></View>
-      <View style={styles.flex}><Text variant="title3" numberOfLines={1}>{cup.beanName}</Text><Text variant="caption" color={colors.neutral600}>{new Date(cup.createdAt).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</Text><Text variant="caption" color={colors.neutral800}>{cup.flavorTags.slice(0, 3).map(localizedFlavor).join(' · ') || '아직 맛을 남기지 않았어요'}</Text></View>
+      <View style={styles.flex}><Text variant="title3" numberOfLines={1}>{cup.beanName}</Text><Text variant="caption" color={colors.neutral600}>{new Date(cup.createdAt).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</Text><Text variant="caption" color={colors.neutral600}>{cup.flavorTags.slice(0, 3).map(localizedFlavor).join(' · ') || '아직 맛을 남기지 않았어요'}</Text></View>
       <View style={styles.rating}><Icon name={cup.satisfaction === 'loved' ? 'heart.fill' : cup.satisfaction === 'good' ? 'face.smiling' : 'circle'} size={24} color={cup.satisfaction === 'loved' ? colors.terracotta : colors.espresso} /><Text variant="caption" color={colors.neutral600}>{cup.satisfaction ? satisfactionLabel[cup.satisfaction] : '평가 전'}</Text></View>
     </Pressable>
   );

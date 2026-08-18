@@ -49,7 +49,7 @@ export default function NotificationsScreen() {
               style={({ pressed }) => [styles.notice, pressed && styles.pressed]}
             >
               <View style={styles.icon}><Icon name={notice.icon} size={22} color={colors.espresso} /></View>
-              <View style={styles.copy}><Text variant="title3">{notice.title}</Text><Text color={colors.neutral800}>{notice.body}</Text></View>
+              <View style={styles.copy}><Text variant="title3">{notice.title}</Text><Text color={colors.neutral600}>{notice.body}</Text></View>
               <Icon name="chevron.right" size={17} color={colors.neutral400} />
             </Pressable>
           ))}

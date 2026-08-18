@@ -3,7 +3,7 @@ import { Image, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import * as ImagePicker from 'expo-image-picker';
-import { BottomActionBar, Button, Field, goBackOrReplace, Icon, Screen, TaskHeader, Text } from '@/components/ui';
+import { BottomActionBar, Button, Field, goBackOrReplace, Icon, InfoNote, Screen, TaskHeader } from '@/components/ui';
 import { getSetting, setSetting } from '@/database/repository';
 import { colors, spacing } from '@/design-system/tokens';
 import { useFeedback } from '@/components/feedback';
@@ -51,7 +51,7 @@ export default function ProfileSettingsScreen() {
       <View style={styles.avatar}>{imageUri ? <Image source={{ uri: imageUri }} style={styles.avatarImage} accessibilityLabel="선택한 프로필 사진" /> : <Icon name="person.crop.circle" size={58} color={colors.espresso} />}</View>
       <View style={styles.photoActions}>{imageUri ? <Button label="사진 제거" variant="tertiary" onPress={() => setImageUri('')} /> : null}<Button label={imageUri ? '사진 바꾸기' : '사진 선택'} variant="secondary" icon="camera.fill" onPress={() => void pickImage()} /></View>
       <Field label="표시 이름" value={name} onChangeText={setName} placeholder="이름을 입력해주세요" maxLength={30} />
-      <Text variant="caption" color={colors.neutral600}>이름과 사진은 이 기기에서만 사용됩니다.</Text>
+      <InfoNote body="이름과 사진은 이 기기에서만 사용됩니다." />
       {exitConfirmation}
     </Screen>
   );

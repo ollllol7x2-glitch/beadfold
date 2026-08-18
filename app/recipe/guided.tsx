@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { BottomActionBar, Button, Card, EmptyState, Icon, Screen, Text, TopBar } from '@/components/ui';
+import { BottomActionBar, Button, Card, EmptyState, Icon, InfoNote, Screen, Text, TopBar } from '@/components/ui';
 import { getBean, listCatalogGear, listCups, listUserGear, saveRecipe, startBrew, trackEvent } from '@/database/repository';
 import { getNextBrewActions, getRecipeAdjustments } from '@/domain/recipeAdjustments';
 import { generateGuidedRecipe } from '@/domain/recipeEngine';
@@ -58,18 +58,12 @@ export default function GuidedRecipeScreen() {
   return (
     <Screen header={<TopBar title="오늘의 레시피" backLabel="원두" backHref={`/bean/${bean.id}`} />} contentContainerStyle={styles.screen} footer={<BottomActionBar primaryLabel="안내 시작하기" onPrimaryPress={() => void begin()} secondaryLabel="직접 조절" onSecondaryPress={() => router.push(`/recipe/manual?beanId=${bean.id}`)} />}>
 
-      <Pressable accessibilityRole="button" accessibilityLabel={`${bean.name} 원두 정보 보기`} onPress={() => router.push(`/bean/${bean.id}`)} style={styles.beanStrip}>
-        <Image source={bean.imageUri ? { uri: bean.imageUri } : require('../../assets/visuals/bean-still-life.png')} style={styles.beanImage} resizeMode="cover" />
-        <View style={styles.flex}><Text variant="title3" numberOfLines={1}>{bean.name}</Text><Text color={colors.neutral800}>{bean.tastingNotes.slice(0, 3).join(' · ') || [bean.country, bean.process].filter(Boolean).join(' · ')}</Text></View>
-        <Icon name="chevron.right" size={17} color={colors.neutral400} />
-      </Pressable>
-
-      <View style={styles.intro}><Text variant="title1" accessibilityRole="header">{headline}</Text><Text variant="bodyLarge" color={colors.neutral800}>{recipe.grindTarget}로 갈고, {recipe.steps.filter((step) => step.waterDeltaMl > 0).length}번 나눠 부어요.</Text></View>
+      <View style={styles.intro}><Text variant="caption" color={colors.neutral600}>{bean.name}</Text><Text variant="title1" accessibilityRole="header">{headline}</Text><Text variant="bodyLarge" color={colors.neutral600}>{recipe.grindTarget}로 갈고, {recipe.steps.filter((step) => step.waterDeltaMl > 0).length}번 나눠 부어요.</Text></View>
 
       {preferredCup ? <Card tone="tinted" style={styles.preferenceCard}>
         <View style={styles.preferenceHeading}><View style={styles.preferenceIcon}><Icon name="heart.fill" size={18} color={colors.terracotta} /></View><View style={styles.flex}><Text variant="label">다음 한 잔은 이렇게 해보세요</Text><Text variant="caption" color={colors.neutral600}>{formatCupDate(preferredCup.createdAt)}에 좋았다고 남긴 추출값을 기준으로 잡았어요.</Text></View></View>
         {nextBrewActions.length ? <View style={styles.actionList}>{nextBrewActions.map((action) => <View key={action.label} style={styles.actionRow}><Text variant="label" style={styles.actionLabel}>{action.label}</Text><Text variant="label" color={colors.espresso}>{action.instruction}</Text></View>)}</View> : <View style={styles.actionList}><View style={styles.actionRow}><Text variant="label" style={styles.actionLabel}>온도</Text><Text variant="label" color={colors.espresso}>{recipe.temperatureC}℃를 유지해요</Text></View><View style={styles.actionRow}><Text variant="label" style={styles.actionLabel}>총 시간</Text><Text variant="label" color={colors.espresso}>{Math.floor(recipe.totalTimeSec / 60)}분 {String(recipe.totalTimeSec % 60).padStart(2, '0')}초를 유지해요</Text></View></View>}
-        {historyAdjustments.length ? <Text variant="caption" color={colors.neutral600}>기본 추천과 달라진 값만 반영했어요.</Text> : null}
+        {historyAdjustments.length ? <InfoNote body="기본 추천과 달라진 값만 반영했어요." /> : null}
       </Card> : null}
 
       <View style={styles.recipeVisual} accessible accessibilityLabel={`원두 ${recipe.doseG}그램, 물 ${recipe.waterMl}밀리리터, ${recipe.temperatureC}도, 총 ${Math.floor(recipe.totalTimeSec / 60)}분 ${recipe.totalTimeSec % 60}초`}>
@@ -84,14 +78,14 @@ export default function GuidedRecipeScreen() {
       <View style={styles.timeline}>
         {recipe.steps.map((step, index) => <View key={step.id} style={styles.stepRow}>
           <View style={styles.stepRail}><View style={styles.stepNumber}><Text variant="label" color={colors.cream}>{index + 1}</Text></View>{index < recipe.steps.length - 1 ? <View style={styles.line} /> : null}</View>
-          <View style={styles.stepCopy}><View style={styles.stepTitle}><Icon name={step.waterDeltaMl ? 'drop.fill' : 'hourglass'} size={18} color={colors.cocoa} /><Text variant="title3" style={styles.flex}>{step.name}</Text><Text variant="label" color={colors.neutral800}>{step.waterDeltaMl ? `${step.waterDeltaMl}ml` : ''}{step.durationSec ? ` · ${step.durationSec}초` : ''}</Text></View><Text color={colors.neutral800}>{friendlyInstruction(step.instruction)}</Text></View>
+          <View style={styles.stepCopy}><View style={styles.stepTitle}><Icon name={step.waterDeltaMl ? 'drop.fill' : 'hourglass'} size={18} color={colors.cocoa} /><Text variant="title3" style={styles.flex}>{step.name}</Text><Text variant="label" color={colors.neutral600}>{step.waterDeltaMl ? `${step.waterDeltaMl}ml` : ''}{step.durationSec ? ` · ${step.durationSec}초` : ''}</Text></View><Text color={colors.neutral600}>{friendlyInstruction(step.instruction)}</Text></View>
         </View>)}
       </View>
 
       <Pressable accessibilityRole="button" accessibilityState={{ expanded: showWhy }} onPress={() => setShowWhy((value) => !value)} style={styles.disclosure}>
         <View style={styles.helpIcon}><Icon name="questionmark" size={16} color={colors.espresso} weight="bold" /></View><Text variant="label" style={styles.flex}>왜 이 레시피인가요?</Text><Icon name={showWhy ? 'chevron.up' : 'chevron.down'} size={16} color={colors.neutral600} />
       </Pressable>
-      {showWhy ? <Card tone="tinted"><Text color={colors.neutral800}>{recipe.explanation.join('\n\n')}</Text></Card> : null}
+      {showWhy ? <Card tone="tinted"><InfoNote body={recipe.explanation.join('\n\n')} /></Card> : null}
 
       <Pressable accessibilityRole="button" accessibilityLabel={`오늘 쓸 장비, ${gearNames.join(', ') || '기본 장비'}, 변경하기`} onPress={() => router.push('/gear')} style={styles.gearRow}><Icon name="dial.medium" size={21} color={colors.espresso} /><View style={styles.flex}><Text variant="label">오늘 쓸 장비</Text><Text variant="caption" color={colors.neutral600}>{gearNames.join(' · ') || '기본 장비'}</Text></View><Icon name="chevron.right" size={16} color={colors.neutral400} /></Pressable>
 
@@ -115,8 +109,6 @@ const styles = StyleSheet.create({
   screen: { gap: spacing.section },
   flex: { flex: 1 },
   loading: { flex: 1, minHeight: 500, alignItems: 'center', justifyContent: 'center', gap: spacing.default },
-  beanStrip: { minHeight: 82, flexDirection: 'row', alignItems: 'center', gap: spacing.small, padding: spacing.compact, backgroundColor: colors.white, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.neutral200, borderRadius: radius.large },
-  beanImage: { width: 66, height: 66, borderRadius: radius.medium },
   intro: { alignItems: 'center', gap: spacing.compact },
   preferenceCard: { gap: spacing.small, backgroundColor: colors.creamDeep, borderColor: colors.neutral200 },
   preferenceHeading: { flexDirection: 'row', alignItems: 'center', gap: spacing.compact },

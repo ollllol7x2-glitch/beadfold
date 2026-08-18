@@ -16,8 +16,8 @@ export function BeanSummary({ bean }: { bean: BeanLot }) {
         <View style={styles.flex}>
           <View style={styles.row}><Text variant="title3" style={styles.flex}>{bean.name}</Text><Icon name="chevron.right" size={16} color={colors.neutral400} /></View>
           <Text variant="caption" color={colors.neutral600}>{[bean.country, bean.region].filter(Boolean).join(' · ') || bean.roaster || '직접 등록한 원두'}</Text>
-          {detail ? <Text variant="label">{detail}</Text> : <Text variant="caption" color={colors.neutral800}>가공·로스팅 정보 미입력</Text>}
-          <View style={styles.weightRow}><View style={styles.weightTrack}><View style={[styles.weightFill, { width: `${remainingRatio * 100}%` }]} /></View><Text variant="caption" color={colors.neutral800}>{bean.remainingWeightG}g</Text></View>
+          {detail ? <Text variant="label">{detail}</Text> : <Text variant="caption" color={colors.neutral600}>가공·로스팅 정보 미입력</Text>}
+          <View style={styles.weightRow}><View style={styles.weightTrack}><View style={[styles.weightFill, { width: `${remainingRatio * 100}%` }]} /></View><Text variant="caption" color={colors.neutral600}>{bean.remainingWeightG}g</Text></View>
         </View>
       </View>
       {bean.tastingNotes.length ? <View style={styles.notes}><Icon name="sparkles" size={14} color={colors.cocoa} /><Text variant="caption" color={colors.cocoa}>{bean.tastingNotes.slice(0, 4).join(' · ')}</Text></View> : null}
@@ -39,7 +39,7 @@ export function CupSummary({ cup }: { cup: Cup }) {
     <Card accessibilityLabel={`${cup.beanName}. ${cup.kind === 'home' ? '홈 브루' : '카페'}. ${cup.satisfaction ? satisfactionLabel[cup.satisfaction] : '평가 대기 중'}.`} style={styles.cupCard}>
       <Image source={cup.imageUri ? { uri: cup.imageUri } : fallbackImage} resizeMode="cover" style={styles.cupImage} accessible={false} />
       <View style={styles.flex}>
-        <View style={styles.row}><Text variant="title3" style={styles.flex}>{cup.beanName}</Text><Icon name={cup.satisfaction === 'loved' ? 'heart.fill' : cup.satisfaction === 'good' ? 'face.smiling' : 'circle'} size={20} color={cup.satisfaction === 'loved' ? colors.terracotta : colors.espresso} /></View>
+        <View style={styles.row}><Text variant="title3" style={styles.flex}>{cup.beanName}</Text><Icon name={cup.satisfaction === 'loved' ? 'heart.fill' : cup.satisfaction === 'good' ? 'face.smiling' : 'circle'} size={20} color={cup.satisfaction === 'loved' ? colors.action : colors.espresso} /></View>
         <Text variant="caption" color={colors.neutral600}>{new Date(cup.createdAt).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} · {cup.kind === 'home' ? '홈 브루' : cup.cafeName || '카페'}</Text>
         {cup.recipeSnapshot ? <Text variant="caption">{cup.recipeSnapshot.doseG}g · {cup.recipeSnapshot.waterMl}ml · {cup.recipeSnapshot.temperatureC}℃</Text> : null}
         {cup.flavorTags.length ? <Text variant="caption" color={colors.cocoa}>{cup.flavorTags.slice(0, 3).map(localizedFlavor).join(' · ')}</Text> : null}
@@ -49,7 +49,7 @@ export function CupSummary({ cup }: { cup: Cup }) {
 }
 
 function Metric({ icon, value }: { icon: Parameters<typeof Icon>[0]['name']; value: string }) {
-  return <View style={styles.metric}><Icon name={icon} size={13} color={colors.neutral600} /><Text variant="caption" color={colors.neutral800}>{value}</Text></View>;
+  return <View style={styles.metric}><Icon name={icon} size={13} color={colors.neutral600} /><Text variant="caption" color={colors.neutral600}>{value}</Text></View>;
 }
 
 const styles = StyleSheet.create({

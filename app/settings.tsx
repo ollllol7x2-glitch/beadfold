@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { Platform, StyleSheet, Switch, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { Button, Card, Icon, PageHeader, Screen, Text, type SymbolName } from '@/components/ui';
+import { Button, Card, Icon, InfoNote, PageHeader, Screen, Text, type SymbolName } from '@/components/ui';
 import { ConfirmDialog } from '@/components/confirmDialog';
 import { getSetting, setSetting } from '@/database/repository';
 import { colors, spacing } from '@/design-system/tokens';
@@ -53,15 +53,15 @@ export default function SettingsScreen() {
   };
   const storageCopy = Platform.OS === 'web' ? '기록은 이 브라우저에 저장돼요. 브라우저 데이터를 지우면 함께 사라질 수 있어요.' : '기록은 이 휴대폰에 저장돼요. 앱을 지우면 함께 사라질 수 있어요.';
   return <Screen header={<PageHeader title="설정" backLabel="마이페이지" backHref="/(tabs)/profile" />} contentContainerStyle={styles.screen}>
-    {status ? <Text accessibilityRole="alert" color={colors.neutral800}>{status}</Text> : null}
+    {status ? <Text accessibilityRole="alert" color={colors.neutral600}>{status}</Text> : null}
     <View style={styles.group}><Setting icon="iphone.vibrate" label="단계 알림 진동" body="다음 단계가 되면 짧게 알려줘요" value={haptics} onChange={(value) => void update('haptics', value, setHaptics)} /><Setting icon="speaker.wave.2.fill" label="알림 소리" body="맛 기록 알림을 소리와 함께 받아요" value={sound} onChange={(value) => void update('sound', value, setSound)} /></View>
     {Platform.OS !== 'web' ?
-      <Card tone="tinted"><View style={styles.cardTitle}><Icon name="bell.badge.fill" size={23} /><Text variant="title3">맛 기록 알림</Text></View><Text color={colors.neutral800}>브루잉을 마친 뒤 맛이 선명할 때 한 번 알려드려요.</Text><Button label="알림 켜기" variant="secondary" onPress={() => void notifications()} /></Card>
+      <Card tone="tinted"><View style={styles.cardTitle}><Icon name="bell.badge.fill" size={23} /><Text variant="title3">맛 기록 알림</Text></View><Text color={colors.neutral600}>브루잉을 마친 뒤 맛이 선명할 때 한 번 알려드려요.</Text><Button label="알림 켜기" variant="secondary" onPress={() => void notifications()} /></Card>
       : null}
-    <Card><View style={styles.cardTitle}><Icon name="iphone" size={23} /><Text variant="title3">저장 위치</Text></View><Text color={colors.neutral800}>{storageCopy}</Text></Card>
-    <Card><View style={styles.cardTitle}><Icon name="archivebox.fill" size={23} /><Text variant="title3">데이터와 백업</Text></View><Text color={colors.neutral800}>원두, 레시피, 브루잉과 맛 기록을 파일로 안전하게 보관하세요.</Text>{Platform.OS === 'web' ? <><View style={styles.backupActions}><Button label="백업 파일 만들기" variant="secondary" loading={backupBusy} onPress={() => void exportBackup()} style={styles.flex} /><Button label="백업 파일 불러오기" variant="secondary" disabled={backupBusy} onPress={selectBackup} style={styles.flex} /></View><Text variant="caption" color={colors.neutral600}>불러오면 현재 기록을 백업 파일의 내용으로 바꿔요. 사진 파일은 함께 복사되지 않을 수 있어요.</Text></> : <Text variant="caption" color={colors.neutral600}>파일 백업과 복원은 웹 버전에서 사용할 수 있어요.</Text>}</Card>
+    <Card><View style={styles.cardTitle}><Icon name="iphone" size={23} /><Text variant="title3">저장 위치</Text></View><InfoNote body={storageCopy} /></Card>
+    <Card><View style={styles.cardTitle}><Icon name="archivebox.fill" size={23} /><Text variant="title3">데이터와 백업</Text></View><InfoNote body="원두, 레시피, 브루잉과 맛 기록을 파일로 안전하게 보관하세요." />{Platform.OS === 'web' ? <><View style={styles.backupActions}><Button label="백업 파일 만들기" variant="secondary" loading={backupBusy} onPress={() => void exportBackup()} style={styles.flex} /><Button label="백업 파일 불러오기" variant="secondary" disabled={backupBusy} onPress={selectBackup} style={styles.flex} /></View><InfoNote body="불러오면 현재 기록을 백업 파일의 내용으로 바꿔요. 사진 파일은 함께 복사되지 않을 수 있어요." /></> : <InfoNote body="파일 백업과 복원은 웹 버전에서 사용할 수 있어요." />}</Card>
     <ConfirmDialog visible={pendingRestore != null} title="백업 파일로 복원할까요?" body={pendingRestore ? `현재 기록은 바뀌어요. 원두 ${summarizeBackup(pendingRestore).beans}개와 커피 기록 ${summarizeBackup(pendingRestore).cups}개를 가져옵니다.` : ''} confirmLabel="복원하기" destructive onCancel={() => setPendingRestore(null)} onConfirm={() => void restoreBackup()} />
   </Screen>;
 }
-function Setting({ icon, label, body, value, onChange }: { icon: SymbolName; label: string; body: string; value: boolean; onChange: (value: boolean) => void }) { return <View style={styles.setting}><View style={styles.settingIcon}><Icon name={icon} size={22} /></View><View style={styles.copy}><Text variant="title3">{label}</Text><Text color={colors.neutral800}>{body}</Text></View><Switch value={value} onValueChange={onChange} accessibilityLabel={label} trackColor={{ false: colors.neutral400, true: colors.espresso }} thumbColor={colors.cream} /></View>; }
+function Setting({ icon, label, body, value, onChange }: { icon: SymbolName; label: string; body: string; value: boolean; onChange: (value: boolean) => void }) { return <View style={styles.setting}><View style={styles.settingIcon}><Icon name={icon} size={22} /></View><View style={styles.copy}><Text variant="title3">{label}</Text><Text color={colors.neutral600}>{body}</Text></View><Switch value={value} onValueChange={onChange} accessibilityLabel={label} trackColor={{ false: colors.neutral400, true: colors.espresso }} thumbColor={colors.cream} /></View>; }
 const styles = StyleSheet.create({ screen: { gap: spacing.section }, flex: { flex: 1 }, group: { backgroundColor: colors.white, borderRadius: 18, overflow: 'hidden' }, setting: { minHeight: 88, flexDirection: 'row', alignItems: 'center', gap: spacing.small, padding: spacing.small }, settingIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: colors.creamDeep, alignItems: 'center', justifyContent: 'center' }, copy: { flex: 1, gap: 2 }, cardTitle: { flexDirection: 'row', alignItems: 'center', gap: spacing.compact }, backupActions: { flexDirection: 'row', gap: spacing.compact } });

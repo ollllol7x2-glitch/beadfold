@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { Button, Card, Chip, Field, Icon, PageHeader, Screen, Text } from '@/components/ui';
+import { Button, Card, Chip, Field, Icon, InfoNote, PageHeader, Screen, Text } from '@/components/ui';
 import { addUserGear, deleteUserGear, listCatalogGear, listUserGear, renameUserGear, setPrimaryGear } from '@/database/repository';
 import type { Gear } from '@/domain/types';
 import { colors, spacing } from '@/design-system/tokens';
@@ -74,7 +74,7 @@ export default function GearScreen() {
               <View style={styles.gearHeading}>
                 <View style={styles.flex}>
                   <Text variant="title3">{item.name}</Text>
-                  <Text color={colors.neutral800}>{item.brand || '직접 등록'}</Text>
+                  <Text color={colors.neutral600}>{item.brand || '직접 등록'}</Text>
                 </View>
                 {item.isPrimary ? <View style={styles.primary}><Icon name="checkmark.circle.fill" size={18} color={colors.success} /><Text variant="label" color={colors.success}>주로 사용</Text></View> : null}
               </View>
@@ -91,16 +91,16 @@ export default function GearScreen() {
             </>
           )}
         </Card>
-      )) : <Text color={colors.neutral800}>아직 등록한 {labels[category]}가 없어요.</Text>}
+      )) : <InfoNote body={`아직 등록한 ${labels[category]}가 없어요.`} />}
 
       <Text variant="title2">장비 목록</Text>
       {filtered.length ? filtered.map((item) => (
         <Card key={item.id}>
           <Text variant="title3">{item.name}</Text>
-          <Text color={colors.neutral800}>{item.brand}</Text>
+          <Text color={colors.neutral600}>{item.brand}</Text>
           <Button label="내 장비에 추가" variant="secondary" onPress={() => void add(item)} />
         </Card>
-      )) : <Text color={colors.neutral800}>이 분류의 기본 장비는 모두 추가했어요.</Text>}
+      )) : <InfoNote body="이 분류의 기본 장비는 모두 추가했어요." />}
 
       <Card>
         <Text variant="title3">목록에 없나요?</Text>

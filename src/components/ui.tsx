@@ -51,6 +51,7 @@ import Hand from 'lucide-react-native/icons/hand';
 import Heart from 'lucide-react-native/icons/heart';
 import Hourglass from 'lucide-react-native/icons/hourglass';
 import House from 'lucide-react-native/icons/house';
+import Info from 'lucide-react-native/icons/info';
 import Leaf from 'lucide-react-native/icons/leaf';
 import ListFilter from 'lucide-react-native/icons/list-filter';
 import Pause from 'lucide-react-native/icons/pause';
@@ -117,6 +118,7 @@ const iconMap = {
   'heart.fill': Heart,
   hourglass: Hourglass,
   'house.fill': House,
+  'info.circle': Info,
   iphone: Smartphone,
   leaf: Leaf,
   'leaf.fill': Bean,
@@ -189,6 +191,16 @@ export function Card({ children, style, accessibilityLabel, tone = 'plain' }: { 
   return <View accessible={Boolean(accessibilityLabel)} accessibilityLabel={accessibilityLabel} style={[styles.card, tone === 'tinted' && styles.cardTinted, tone === 'dark' && styles.cardDark, style]}>{children}</View>;
 }
 
+/** A compact, consistent treatment for explanatory copy that is not itself an action or a value. */
+export function InfoNote({ body, icon = 'info.circle', style, accessibilityLabel }: { body: string; icon?: SymbolName; style?: ViewStyle; accessibilityLabel?: string }) {
+  return (
+    <View accessible accessibilityLabel={accessibilityLabel ?? body} style={[styles.infoNote, style]}>
+      <Icon name={icon} size={16} color={colors.neutral600} />
+      <Text variant="caption" color={colors.neutral600} style={styles.infoNoteText}>{body}</Text>
+    </View>
+  );
+}
+
 export function Button({
   label,
   variant = 'primary',
@@ -254,13 +266,13 @@ export const Field = forwardRef<TextInput, TextInputProps & { label: string; err
           {...props}
         />
         {error ? <Text nativeID={messageId} accessibilityRole="alert" variant="caption" color={colors.error}>{error}</Text> : null}
-        {!error && hint ? <Text nativeID={messageId} variant="caption" color={colors.neutral800}>{hint}</Text> : null}
+        {!error && hint ? <Text nativeID={messageId} variant="caption" color={colors.neutral600}>{hint}</Text> : null}
       </View>
     );
   },
 );
 
-export function Chip({ label, selected, onPress, accessibilityLabel, icon, selectedStyle, selectedTextColor = colors.cream }: { label: string; selected?: boolean; onPress?: () => void; accessibilityLabel?: string; icon?: SymbolName; selectedStyle?: ViewStyle; selectedTextColor?: string }) {
+export function Chip({ label, selected, onPress, accessibilityLabel, icon, selectedStyle, selectedTextColor = colors.espresso }: { label: string; selected?: boolean; onPress?: () => void; accessibilityLabel?: string; icon?: SymbolName; selectedStyle?: ViewStyle; selectedTextColor?: string }) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -346,7 +358,7 @@ export function EmptyState({ title, body, action, icon = 'leaf' }: { title: stri
     <View accessible accessibilityLabel={`${title}. ${body}`} style={styles.empty}>
       <View style={styles.emptyIcon}><Icon name={icon} size={28} color={colors.espresso} /></View>
       <Text variant="title3">{title}</Text>
-      <Text color={colors.neutral800}>{body}</Text>
+      <Text color={colors.neutral600}>{body}</Text>
       {action}
     </View>
   );
@@ -448,7 +460,7 @@ function NavigationItem({ item, selected }: { item: (typeof navItems)[number]; s
 }
 
 function SheetAction({ icon, title, body, onPress }: { icon: SymbolName; title: string; body: string; onPress: () => void }) {
-  return <Pressable accessibilityRole="button" accessibilityLabel={`${title}. ${body}`} onPress={onPress} style={({ pressed }) => [styles.sheetAction, pressed && styles.pressed]}><View style={styles.sheetActionIcon}><Icon name={icon} size={23} /></View><View style={styles.sheetActionCopy}><Text variant="title3" numberOfLines={1}>{title}</Text><Text variant="caption" color={colors.neutral800} numberOfLines={2}>{body}</Text></View><Icon name="chevron.right" size={20} color={colors.neutral600} /></Pressable>;
+  return <Pressable accessibilityRole="button" accessibilityLabel={`${title}. ${body}`} onPress={onPress} style={({ pressed }) => [styles.sheetAction, pressed && styles.pressed]}><View style={styles.sheetActionIcon}><Icon name={icon} size={23} /></View><View style={styles.sheetActionCopy}><Text variant="title3" numberOfLines={1}>{title}</Text><Text variant="caption" color={colors.neutral600} numberOfLines={2}>{body}</Text></View><Icon name="chevron.right" size={20} color={colors.neutral600} /></Pressable>;
 }
 
 const styles = StyleSheet.create({
@@ -463,6 +475,8 @@ const styles = StyleSheet.create({
   card: { backgroundColor: colors.white, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.neutral200, borderRadius: radius.large, padding: spacing.default, gap: spacing.small, ...shadows.soft },
   cardTinted: { backgroundColor: colors.creamDeep, borderColor: colors.neutral200 },
   cardDark: { backgroundColor: colors.action, borderColor: colors.action },
+  infoNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 7, paddingHorizontal: spacing.small, paddingVertical: spacing.compact, borderRadius: 12, backgroundColor: colors.creamDeep },
+  infoNoteText: { flex: 1 },
   button: { minHeight: 54, minWidth: 54, borderRadius: radius.medium, paddingHorizontal: 20, paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
   buttonPrimary: { backgroundColor: colors.action, ...shadows.soft },
   buttonSecondary: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200 },
@@ -479,7 +493,7 @@ const styles = StyleSheet.create({
   input: { minHeight: 54, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.medium, backgroundColor: colors.white, paddingHorizontal: 15, paddingVertical: 13, color: colors.charcoal, fontFamily: fonts.regular, fontSize: 16 },
   inputError: { borderColor: colors.error, borderWidth: 2 },
   chip: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.full, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, justifyContent: 'center' },
-  chipSelected: { backgroundColor: colors.action, borderColor: colors.action },
+  chipSelected: { backgroundColor: colors.terracotta, borderColor: colors.terracotta },
   headerWrap: { gap: spacing.default },
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.default },
   headerCopy: { flex: 1, gap: spacing.compact },
