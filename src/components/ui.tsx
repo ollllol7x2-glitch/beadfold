@@ -17,87 +17,131 @@ import {
   type TextProps,
   type ViewStyle,
 } from 'react-native';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { router, usePathname, type Href } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import type { LucideIcon } from 'lucide-react-native';
+import Archive from 'lucide-react-native/icons/archive';
+import ArrowLeftRight from 'lucide-react-native/icons/arrow-left-right';
+import ArrowRight from 'lucide-react-native/icons/arrow-right';
+import Bean from 'lucide-react-native/icons/bean';
+import Bell from 'lucide-react-native/icons/bell';
+import BellRing from 'lucide-react-native/icons/bell-ring';
+import BookOpen from 'lucide-react-native/icons/book-open';
+import Camera from 'lucide-react-native/icons/camera';
+import Check from 'lucide-react-native/icons/check';
+import ChevronDown from 'lucide-react-native/icons/chevron-down';
+import ChevronLeft from 'lucide-react-native/icons/chevron-left';
+import ChevronRight from 'lucide-react-native/icons/chevron-right';
+import ChevronUp from 'lucide-react-native/icons/chevron-up';
+import Circle from 'lucide-react-native/icons/circle';
+import CircleCheck from 'lucide-react-native/icons/circle-check';
+import CircleQuestionMark from 'lucide-react-native/icons/circle-question-mark';
+import CircleUserRound from 'lucide-react-native/icons/circle-user-round';
+import Clock from 'lucide-react-native/icons/clock';
+import Coffee from 'lucide-react-native/icons/coffee';
+import Cog from 'lucide-react-native/icons/cog';
+import Droplets from 'lucide-react-native/icons/droplets';
+import FaceSlightlySmiling from 'lucide-react-native/icons/face-slightly-smiling';
+import Flame from 'lucide-react-native/icons/flame';
+import Footprints from 'lucide-react-native/icons/footprints';
+import Globe from 'lucide-react-native/icons/globe';
+import Hand from 'lucide-react-native/icons/hand';
+import Heart from 'lucide-react-native/icons/heart';
+import Hourglass from 'lucide-react-native/icons/hourglass';
+import House from 'lucide-react-native/icons/house';
+import Leaf from 'lucide-react-native/icons/leaf';
+import ListFilter from 'lucide-react-native/icons/list-filter';
+import Pause from 'lucide-react-native/icons/pause';
+import Play from 'lucide-react-native/icons/play';
+import Plus from 'lucide-react-native/icons/plus';
+import RefreshCw from 'lucide-react-native/icons/refresh-cw';
+import Search from 'lucide-react-native/icons/search';
+import SkipForward from 'lucide-react-native/icons/skip-forward';
+import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
+import Smartphone from 'lucide-react-native/icons/smartphone';
+import Sparkles from 'lucide-react-native/icons/sparkles';
+import Thermometer from 'lucide-react-native/icons/thermometer';
+import ThumbsDown from 'lucide-react-native/icons/thumbs-down';
+import Timer from 'lucide-react-native/icons/timer';
+import Volume2 from 'lucide-react-native/icons/volume-2';
+import WandSparkles from 'lucide-react-native/icons/wand-sparkles';
+import X from 'lucide-react-native/icons/x';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, radius, shadows, spacing, typography } from '@/design-system/tokens';
 import { listBeans } from '@/database/repository';
 import type { BeanLot } from '@/domain/types';
 
 type TextVariant = keyof typeof typography;
-export type SymbolName = SymbolViewProps['name'];
+const iconMap = {
+  'arrow.left.arrow.right': ArrowLeftRight,
+  'arrow.right': ArrowRight,
+  'arrow.clockwise': RefreshCw,
+  'arrow.triangle.2.circlepath': RefreshCw,
+  'archivebox.fill': Archive,
+  'bell.badge.fill': BellRing,
+  bell: Bell,
+  'book.closed.fill': BookOpen,
+  'book.pages.fill': BookOpen,
+  checkmark: Check,
+  'checkmark.circle.fill': CircleCheck,
+  'chevron.down': ChevronDown,
+  'chevron.left': ChevronLeft,
+  'chevron.right': ChevronRight,
+  'chevron.up': ChevronUp,
+  circle: Circle,
+  clock: Clock,
+  'clock.fill': Clock,
+  'cup.and.saucer': Coffee,
+  'cup.and.saucer.fill': Coffee,
+  'cup.and.heat.waves.fill': Coffee,
+  'camera.fill': Camera,
+  'dial.medium': SlidersHorizontal,
+  'drop.fill': Droplets,
+  'face.smiling': FaceSlightlySmiling,
+  'fast.forward.fill': SkipForward,
+  'figure.walk.motion': Footprints,
+  'flame.fill': Flame,
+  'forward.fill': SkipForward,
+  'gearshape.fill': Cog,
+  'globe.asia.australia.fill': Globe,
+  'hand.tap.fill': Hand,
+  'hand.thumbsdown.fill': ThumbsDown,
+  'heart.fill': Heart,
+  hourglass: Hourglass,
+  'house.fill': House,
+  iphone: Smartphone,
+  leaf: Leaf,
+  'leaf.fill': Bean,
+  'line.3.horizontal.decrease': ListFilter,
+  'mug.fill': Coffee,
+  magnifyingglass: Search,
+  pause: Pause,
+  'pause.fill': Pause,
+  play: Play,
+  'play.fill': Play,
+  plus: Plus,
+  'person.crop.circle': CircleUserRound,
+  questionmark: CircleQuestionMark,
+  'slider.horizontal.3': SlidersHorizontal,
+  'speaker.wave.2.fill': Volume2,
+  sparkles: Sparkles,
+  'thermometer.medium': Thermometer,
+  timer: Timer,
+  'wand.and.stars': WandSparkles,
+  'waterbottle.fill': Droplets,
+  xmark: X,
+} satisfies Record<string, LucideIcon>;
 
-type WebIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
-
-const webIconNames: Record<string, WebIconName> = {
-  'arrow.left.arrow.right': 'swap-horizontal',
-  'arrow.clockwise': 'refresh',
-  'arrow.triangle.2.circlepath': 'refresh',
-  'archivebox.fill': 'archive',
-  'bell.badge.fill': 'bell-badge',
-  bell: 'bell-outline',
-  'book.closed.fill': 'book-open-variant',
-  'book.pages.fill': 'book-open-page-variant',
-  checkmark: 'check',
-  'checkmark.circle.fill': 'check-circle',
-  'chevron.down': 'chevron-down',
-  'chevron.left': 'chevron-left',
-  'chevron.right': 'chevron-right',
-  'chevron.up': 'chevron-up',
-  circle: 'circle-outline',
-  clock: 'clock-outline',
-  'clock.fill': 'clock',
-  'cup.and.saucer': 'coffee-outline',
-  'cup.and.saucer.fill': 'coffee',
-  'cup.and.heat.waves.fill': 'coffee',
-  'camera.fill': 'camera',
-  'dial.medium': 'tune-variant',
-  'drop.fill': 'water',
-  'face.smiling': 'emoticon-happy-outline',
-  'fast.forward.fill': 'fast-forward',
-  'figure.walk.motion': 'walk',
-  'flame.fill': 'fire',
-  'forward.fill': 'fast-forward',
-  'gearshape.fill': 'cog',
-  'globe.asia.australia.fill': 'earth',
-  'hand.tap.fill': 'gesture-tap',
-  'hand.thumbsdown.fill': 'thumb-down',
-  'heart.fill': 'heart',
-  hourglass: 'timer-sand',
-  'house.fill': 'home',
-  iphone: 'cellphone',
-  'leaf.fill': 'leaf',
-  'line.3.horizontal.decrease': 'filter-variant',
-  'mug.fill': 'coffee',
-  magnifyingglass: 'magnify',
-  pause: 'pause',
-  'pause.fill': 'pause',
-  play: 'play',
-  'play.fill': 'play',
-  plus: 'plus',
-  'person.crop.circle': 'account-circle-outline',
-  questionmark: 'help',
-  'slider.horizontal.3': 'tune',
-  'speaker.wave.2.fill': 'volume-high',
-  sparkles: 'creation',
-  'thermometer.medium': 'thermometer',
-  timer: 'timer-outline',
-  'wand.and.stars': 'magic-staff',
-  'waterbottle.fill': 'bottle-soda-classic',
-  xmark: 'close',
-};
+export type SymbolName = keyof typeof iconMap;
 
 export function Text({ variant = 'body', color = colors.charcoal, style, ...props }: TextProps & { variant?: TextVariant; color?: string }) {
   return <NativeText allowFontScaling maxFontSizeMultiplier={2} style={[typography[variant], { color }, style]} {...props} />;
 }
 
-export function Icon({ name, size = 22, color = colors.espresso, weight = 'regular' }: { name: SymbolName; size?: number; color?: string; weight?: SymbolViewProps['weight'] }) {
-  if (Platform.OS === 'web') {
-    return <MaterialCommunityIcons accessible={false} importantForAccessibility="no-hide-descendants" name={webIconNames[String(name)] ?? 'circle-small'} size={size} color={color} />;
-  }
-  return <SymbolView accessible={false} name={name} size={size} tintColor={color} weight={weight} fallback={<NativeText accessible={false} style={{ color, fontSize: size }}>•</NativeText>} />;
+export function Icon({ name, size = 22, color = colors.espresso, weight = 'regular' }: { name: SymbolName; size?: number; color?: string; weight?: 'regular' | 'semibold' | 'bold' }) {
+  const Lucide = iconMap[name];
+  const strokeWidth = weight === 'regular' ? 1.75 : 2;
+  return <Lucide accessible={false} color={color} size={size} strokeWidth={strokeWidth} />;
 }
 
 export function BrandMark({ size = 30 }: { size?: number; inverted?: boolean }) {
