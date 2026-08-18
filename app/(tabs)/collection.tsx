@@ -4,8 +4,8 @@ import { router, useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { BeanSummary, RecipeSummary } from '@/components/data';
 import { Button, EmptyState, Icon, Screen, Text } from '@/components/ui';
-import { listBeans, listRecipes, listUserGear, restoreBean } from '@/database/repository';
-import type { BeanLot, Gear, Recipe } from '@/domain/types';
+import { listBeans, listCups, listRecipes, listUserGear, restoreBean } from '@/database/repository';
+import type { BeanLot, Cup, Gear, Recipe } from '@/domain/types';
 import { colors, radius, spacing } from '@/design-system/tokens';
 import { useFeedback } from '@/components/feedback';
 
@@ -18,14 +18,17 @@ export default function CollectionScreen() {
   const [beans, setBeans] = useState<BeanLot[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [gear, setGear] = useState<Gear[]>([]);
-  const load = useCallback(async () => { const [b, r, g] = await Promise.all([listBeans(db, true), listRecipes(db), listUserGear(db)]); setBeans(b); setRecipes(r); setGear(g); }, [db]);
+  const [cups, setCups] = useState<Cup[]>([]);
+  const load = useCallback(async () => { const [b, r, g, c] = await Promise.all([listBeans(db, true), listRecipes(db), listUserGear(db), listCups(db, { kind: 'home' })]); setBeans(b); setRecipes(r); setGear(g); setCups(c); }, [db]);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
   const activeBeans = beans.filter((bean) => bean.state !== 'archived');
   const archivedBeans = beans.filter((bean) => bean.state === 'archived');
+  const recipeLastUsedAt = new Map<string, string>();
+  cups.forEach((cup) => { if (cup.recipeSnapshot && !recipeLastUsedAt.has(cup.recipeSnapshot.id)) recipeLastUsedAt.set(cup.recipeSnapshot.id, cup.createdAt); });
   return <Screen header={<View style={styles.header}><Text variant="title1" accessibilityRole="header">보관함</Text></View>} contentContainerStyle={styles.screen}>
     <View accessibilityRole="tablist" style={styles.segment}><Segment label="원두" count={activeBeans.length} selected={section === 'beans'} onPress={() => setSection('beans')} /><Segment label="레시피" count={recipes.length} selected={section === 'recipes'} onPress={() => setSection('recipes')} /><Segment label="장비" count={gear.length} selected={section === 'gear'} onPress={() => setSection('gear')} /></View>
     {section === 'beans' ? <>{activeBeans.length ? <View style={styles.list}>{activeBeans.map((bean) => <Pressable key={bean.id} accessibilityRole="button" accessibilityLabel={`${bean.name} 원두 보기`} onPress={() => router.push(`/bean/${bean.id}`)}><BeanSummary bean={bean} /></Pressable>)}</View> : <EmptyState title="원두를 하나 담아볼까요?" body="이름과 남은 양만 알면 시작할 수 있어요." icon="leaf.fill" action={<Button label="원두 추가하기" onPress={() => router.push('/add-bean')} />} />}{archivedBeans.length ? <View style={styles.archivedSection}><Text variant="title2">보관한 원두</Text>{archivedBeans.map((bean) => <View key={bean.id} style={styles.archivedRow}><View style={styles.copy}><Text variant="title3">{bean.name}</Text><Text color={colors.neutral600}>기본 목록에서 숨긴 원두</Text></View><Button label="복구" variant="secondary" onPress={async () => { await restoreBean(db, bean.id); await load(); showFeedback('원두를 원래 상태로 복구했어요.'); }} /></View>)}</View> : null}</> : null}
-    {section === 'recipes' && (recipes.length ? <View style={styles.list}>{recipes.map((recipe) => <Pressable key={recipe.id} accessibilityRole="button" accessibilityLabel={`${recipe.name} 레시피 보기`} onPress={() => router.push(`/recipe/manual?recipeId=${recipe.id}`)}><RecipeSummary recipe={recipe} /></Pressable>)}</View> : <EmptyState title="저장한 레시피가 없어요" body="원두를 고르면 추천 레시피부터 시작할 수 있어요." icon="book.pages.fill" />)}
+    {section === 'recipes' && (recipes.length ? <View style={styles.list}>{recipes.map((recipe) => <Pressable key={recipe.id} accessibilityRole="button" accessibilityLabel={`${recipe.name} 레시피 보기`} onPress={() => router.push(`/recipe/manual?recipeId=${recipe.id}`)}><RecipeSummary recipe={recipe} lastUsedAt={recipeLastUsedAt.get(recipe.id)} /></Pressable>)}</View> : <EmptyState title="저장한 레시피가 없어요" body="원두를 고르면 추천 레시피부터 시작할 수 있어요." icon="book.pages.fill" />)}
     {section === 'gear' && <>{gear.length ? <View style={styles.gearList}>{gear.map((item) => <View key={item.id} style={styles.gear}><View style={styles.gearIcon}><Icon name={gearIcon(item.category)} size={24} /></View><View style={styles.copy}><Text variant="title3">{item.name}</Text><Text color={colors.neutral600}>{gearLabel(item.category)}{item.isPrimary ? ' · 주로 사용' : ''}</Text></View></View>)}</View> : <EmptyState title="사용하는 장비를 알려주세요" body="등록하지 않아도 기본값으로 추천받을 수 있어요." icon="dial.medium" />}<Button label="장비 관리" variant="secondary" onPress={() => router.push('/gear')} /></>}
   </Screen>;
 }

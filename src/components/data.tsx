@@ -9,13 +9,15 @@ const fallbackImage = require('../../assets/visuals/bean-still-life.png');
 export function BeanSummary({ bean }: { bean: BeanLot }) {
   const remainingRatio = Math.max(0, Math.min(1, bean.initialWeightG ? bean.remainingWeightG / bean.initialWeightG : 0));
   const detail = [bean.process, bean.roastLevel === 'unknown' ? '' : roastLevelLabel[bean.roastLevel]].filter(Boolean).join(' · ');
+  const origin = [bean.country, bean.region].filter(Boolean).join(' · ') || bean.roaster || '직접 등록한 원두';
+  const registeredAt = formatShortDate(bean.createdAt);
   return (
-    <Card accessibilityLabel={`${bean.name}. ${[bean.country, bean.region, detail].filter(Boolean).join(', ')}. 남은 원두 ${bean.remainingWeightG}그램. ${beanStateLabel[bean.state]}.`} style={styles.beanCard}>
+    <Card accessibilityLabel={`${bean.name}. ${[bean.country, bean.region, detail].filter(Boolean).join(', ')}. ${registeredAt} 등록. 남은 원두 ${bean.remainingWeightG}그램. ${beanStateLabel[bean.state]}.`} style={styles.beanCard}>
       <View style={styles.beanRow}>
         <Image source={bean.imageUri ? { uri: bean.imageUri } : fallbackImage} resizeMode="cover" style={styles.beanImage} accessible={false} />
         <View style={styles.flex}>
           <View style={styles.row}><Text variant="title3" style={styles.flex}>{bean.name}</Text><Icon name="chevron.right" size={16} color={colors.neutral400} /></View>
-          <Text variant="caption" color={colors.neutral600}>{[bean.country, bean.region].filter(Boolean).join(' · ') || bean.roaster || '직접 등록한 원두'}</Text>
+          <Text variant="caption" color={colors.neutral600} numberOfLines={1}>{origin} · {registeredAt}</Text>
           {detail ? <Text variant="label">{detail}</Text> : <Text variant="caption" color={colors.neutral600}>가공·로스팅 정보 미입력</Text>}
           <View style={styles.weightRow}><View style={styles.weightTrack}><View style={[styles.weightFill, { width: `${remainingRatio * 100}%` }]} /></View><Text variant="caption" color={colors.neutral600}>{bean.remainingWeightG}g</Text></View>
         </View>
@@ -25,11 +27,12 @@ export function BeanSummary({ bean }: { bean: BeanLot }) {
   );
 }
 
-export function RecipeSummary({ recipe }: { recipe: Recipe }) {
+export function RecipeSummary({ recipe, lastUsedAt }: { recipe: Recipe; lastUsedAt?: string }) {
+  const usage = lastUsedAt ? `최근 사용 ${formatShortDate(lastUsedAt)}` : `저장 ${formatShortDate(recipe.createdAt)}`;
   return (
-    <Card accessibilityLabel={`${recipe.name}. 원두 ${recipe.doseG}그램, 물 ${recipe.waterMl}밀리리터, ${recipe.temperatureC}도, ${recipe.totalTimeSec}초.`} style={styles.recipeCard}>
+    <Card accessibilityLabel={`${recipe.name}. ${usage}. 원두 ${recipe.doseG}그램, 물 ${recipe.waterMl}밀리리터, ${recipe.temperatureC}도, ${recipe.totalTimeSec}초.`} style={styles.recipeCard}>
       <View style={styles.recipeIcon}><Icon name={recipe.type === 'guided' ? 'wand.and.stars' : 'slider.horizontal.3'} size={26} color={colors.espresso} /></View>
-      <View style={styles.flex}><View style={styles.row}><Text variant="title3" style={styles.flex}>{recipe.name}</Text><Icon name="chevron.right" size={16} color={colors.neutral400} /></View><Text variant="caption" color={colors.neutral600}>{recipe.type === 'guided' ? '추천 레시피' : '직접 만든 레시피'}</Text><View style={styles.recipeMetrics}><Metric icon="leaf.fill" value={`${recipe.doseG}g`} /><Metric icon="drop.fill" value={`${recipe.waterMl}ml`} /><Metric icon="thermometer.medium" value={`${recipe.temperatureC}°`} /><Metric icon="clock.fill" value={`${Math.floor(recipe.totalTimeSec / 60)}:${String(recipe.totalTimeSec % 60).padStart(2, '0')}`} /></View></View>
+      <View style={styles.flex}><View style={styles.row}><Text variant="title3" style={styles.flex}>{recipe.name}</Text><Icon name="chevron.right" size={16} color={colors.neutral400} /></View><Text variant="caption" color={colors.neutral600}>{recipe.type === 'guided' ? '추천 레시피' : '직접 만든 레시피'} · {usage}</Text><View style={styles.recipeMetrics}><Metric icon="leaf.fill" value={`${recipe.doseG}g`} /><Metric icon="drop.fill" value={`${recipe.waterMl}ml`} /><Metric icon="thermometer.medium" value={`${recipe.temperatureC}°`} /><Metric icon="clock.fill" value={`${Math.floor(recipe.totalTimeSec / 60)}:${String(recipe.totalTimeSec % 60).padStart(2, '0')}`} /></View></View>
     </Card>
   );
 }
@@ -50,6 +53,10 @@ export function CupSummary({ cup }: { cup: Cup }) {
 
 function Metric({ icon, value }: { icon: Parameters<typeof Icon>[0]['name']; value: string }) {
   return <View style={styles.metric}><Icon name={icon} size={13} color={colors.neutral600} /><Text variant="caption" color={colors.neutral600}>{value}</Text></View>;
+}
+
+function formatShortDate(value: string) {
+  return new Date(value).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
 }
 
 const styles = StyleSheet.create({
