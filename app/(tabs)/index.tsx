@@ -139,7 +139,7 @@ export default function HomeScreen() {
       {suggestedAction ? <NextAction {...suggestedAction} onPress={() => router.push(suggestedAction.path as never)} /> : null}
 
       <SectionTitle title="최근에 내린 커피" action={<Button label="전체 보기" variant="tertiary" onPress={() => router.push('/(tabs)/journal')} />} />
-      {cups.length ? <View style={styles.cupList}>{cups.slice(0, 3).map((cup, index) => <CupRow key={cup.id} cup={cup} imageOffset={index} />)}</View> : <Card tone="tinted"><View style={styles.emptyCup}><Icon name="cup.and.saucer" size={30} color={colors.espresso} /><View style={styles.flex}><Text variant="title3">아직 기록이 없어요</Text><Text color={colors.neutral800}>첫 브루잉이 끝나면 여기에 바로 나타나요.</Text></View></View></Card>}
+      {cups.length ? <View style={styles.cupList}>{cups.slice(0, 3).map((cup, index) => <CupRow key={cup.id} cup={cup} imageOffset={index} showDivider={index > 0} />)}</View> : <Card tone="tinted"><View style={styles.emptyCup}><Icon name="cup.and.saucer" size={30} color={colors.espresso} /><View style={styles.flex}><Text variant="title3">아직 기록이 없어요</Text><Text color={colors.neutral800}>첫 브루잉이 끝나면 여기에 바로 나타나요.</Text></View></View></Card>}
       <BottomSheet visible={beanPickerOpen} title="어떤 원두로 내릴까요?" onClose={() => setBeanPickerOpen(false)}><View style={styles.pickerList}>{availableBeans.map((bean) => <Pressable key={bean.id} accessibilityRole="button" accessibilityLabel={`${bean.name}로 내리기`} onPress={() => { setBeanPickerOpen(false); router.push(`/recipe/guided?beanId=${bean.id}`); }} style={styles.pickerItem}><View style={styles.pickerIcon}><Icon name="leaf.fill" size={22} /></View><View style={styles.flex}><Text variant="title3">{bean.name}</Text><Text variant="caption" color={colors.neutral800}>{bean.remainingWeightG}g 남음{bean.roaster ? ` · ${bean.roaster}` : ''}</Text></View><Icon name="chevron.right" size={18} color={colors.neutral600} /></Pressable>)}</View></BottomSheet>
     </Screen>
   );
@@ -213,9 +213,9 @@ function BeginnerPath({ hasBean, beanId, cupCount }: { hasBean: boolean; beanId?
   );
 }
 
-function CupRow({ cup, imageOffset }: { cup: Cup; imageOffset: number }) {
+function CupRow({ cup, imageOffset, showDivider }: { cup: Cup; imageOffset: number; showDivider: boolean }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`${cup.beanName} 기록 보기`} onPress={() => router.push(`/cup/${cup.id}`)} style={({ pressed }) => [styles.cupRow, pressed && styles.pressed]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={`${cup.beanName} 기록 보기`} onPress={() => router.push(`/cup/${cup.id}`)} style={({ pressed }) => [styles.cupRow, showDivider && styles.cupRowDivided, pressed && styles.pressed]}>
       <View style={styles.thumbnail}><Image source={require('../../assets/visuals/bean-still-life.png')} resizeMode="cover" style={[styles.thumbnailImage, { transform: [{ scale: 1.25 + imageOffset * 0.04 }] }]} /></View>
       <View style={styles.flex}><Text variant="title3" numberOfLines={1}>{cup.beanName}</Text><Text variant="caption" color={colors.neutral600}>{new Date(cup.createdAt).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</Text><Text variant="caption" color={colors.neutral800}>{cup.flavorTags.slice(0, 3).map(localizedFlavor).join(' · ') || '아직 맛을 남기지 않았어요'}</Text></View>
       <View style={styles.rating}><Icon name={cup.satisfaction === 'loved' ? 'heart.fill' : cup.satisfaction === 'good' ? 'face.smiling' : 'circle'} size={24} color={cup.satisfaction === 'loved' ? colors.terracotta : colors.espresso} /><Text variant="caption" color={colors.neutral600}>{cup.satisfaction ? satisfactionLabel[cup.satisfaction] : '평가 전'}</Text></View>
@@ -224,7 +224,7 @@ function CupRow({ cup, imageOffset }: { cup: Cup; imageOffset: number }) {
 }
 
 const styles = StyleSheet.create({
-  screen: { paddingTop: spacing.compact, gap: spacing.section },
+  screen: { paddingTop: spacing.section, gap: spacing.section },
   brandRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   wordmark: { flexDirection: 'row', alignItems: 'center', gap: spacing.compact },
   wordmarkText: { letterSpacing: 4 },
@@ -266,7 +266,8 @@ const styles = StyleSheet.create({
   notificationBadge: { position: 'absolute', minWidth: 19, height: 19, right: 2, top: 1, paddingHorizontal: 4, borderRadius: 10, backgroundColor: colors.terracotta, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.cream },
   notificationBadgeText: { fontSize: 10, lineHeight: 12, fontWeight: '700' },
   cupList: { backgroundColor: colors.white, borderRadius: radius.large, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.neutral200 },
-  cupRow: { minHeight: 92, flexDirection: 'row', alignItems: 'center', gap: spacing.small, padding: spacing.small, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.neutral200 },
+  cupRow: { minHeight: 92, flexDirection: 'row', alignItems: 'center', gap: spacing.small, padding: spacing.small },
+  cupRowDivided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.neutral200 },
   thumbnail: { width: 72, height: 72, borderRadius: radius.medium, overflow: 'hidden', backgroundColor: colors.creamDeep },
   thumbnailImage: { width: '100%', height: '100%' },
   rating: { width: 66, alignItems: 'center', gap: 4 },

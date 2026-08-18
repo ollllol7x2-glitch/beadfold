@@ -3,8 +3,9 @@ import { StyleSheet, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
-import { PageHeader, Screen, Text } from '@/components/ui';
+import { Icon, PageHeader, Screen, Text } from '@/components/ui';
 import { listCups, trackEvent } from '@/database/repository';
+import { getBeanRecommendations, recommendationDetail, recommendationTitle } from '@/domain/beanRecommendations';
 import { calculateTasteProfile } from '@/domain/tasteProfile';
 import {
   localizedFlavor,
@@ -85,6 +86,7 @@ export default function TasteProfileScreen() {
         roasts={shownProfile.topRoasts}
         recentTrend={shownProfile.recentTrend}
       />
+      <BeanSelectionGuide profile={shownProfile} />
     </Screen>
   );
 }
@@ -286,6 +288,35 @@ function PreferenceAnnotations({ origins, processes, roasts, recentTrend }: { or
   );
 }
 
+function BeanSelectionGuide({ profile }: { profile: TasteProfile }) {
+  const recommendations = getBeanRecommendations(profile);
+  const isReady = profile.ratedCupCount >= 3 && profile.tasteAverages.length >= 3;
+
+  return (
+    <View style={styles.selectionSection}>
+      <View style={styles.selectionHeading}>
+        <Text variant="label" color={colors.action}>NEXT BEAN</Text>
+        <Text variant="title2">다음 원두는 이렇게 골라보세요</Text>
+        <Text color={colors.neutral600}>{isReady ? '취향 지문과 반복된 향미를 기준으로, 다음에 구매할 원두의 조건을 골랐어요.' : '맛 기록이 세 잔 이상 쌓이면 다음에 구매할 원두 조건을 추천해드려요.'}</Text>
+      </View>
+
+      {recommendations.length ? <View style={styles.recommendationList}>
+        {recommendations.map((recommendation, index) => (
+          <View key={recommendation.id} style={styles.recommendationRow}>
+            <View style={[styles.recommendationIndex, index === 0 && styles.recommendationIndexPrimary]}><Text variant="caption" color={index === 0 ? colors.white : colors.action}>{String(index + 1).padStart(2, '0')}</Text></View>
+            <View style={styles.recommendationCopy}>
+              <Text variant="title3">{recommendationTitle(recommendation)}</Text>
+              <Text variant="caption" color={colors.neutral600}>{recommendationDetail(recommendation)}</Text>
+              <View style={styles.noteRow}>{recommendation.tastingNotes.map((note) => <View key={note} style={styles.noteTag}><Text variant="caption" color={colors.neutral800}>{note}</Text></View>)}</View>
+              <Text color={colors.neutral800}>{recommendation.reason}</Text>
+            </View>
+          </View>
+        ))}
+      </View> : <View style={styles.recommendationWaiting}><Icon name="leaf.fill" size={26} color={colors.action} /><Text variant="title3">아직 추천 조건을 만드는 중이에요</Text><Text color={colors.neutral600}>좋았던 커피에 향미와 맛 점수를 남기면, 다음 원두를 더 구체적으로 골라드릴게요.</Text></View>}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   screen: { gap: spacing.section },
   poster: { minHeight: 620, overflow: 'hidden', borderRadius: radius.hero, backgroundColor: colors.action, paddingHorizontal: spacing.roomy, paddingVertical: spacing.roomy },
@@ -309,4 +340,14 @@ const styles = StyleSheet.create({
   annotationCell: { flex: 1, minHeight: 92, gap: spacing.xs, paddingRight: spacing.compact },
   annotationCellBorder: { paddingLeft: spacing.default, borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.neutral200 },
   trendBlock: { gap: spacing.compact, paddingTop: spacing.xs },
+  selectionSection: { gap: spacing.roomy, paddingBottom: spacing.section },
+  selectionHeading: { gap: 2 },
+  recommendationList: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.neutral200 },
+  recommendationRow: { flexDirection: 'row', gap: spacing.small, paddingVertical: spacing.default, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.neutral200 },
+  recommendationIndex: { width: 32, height: 32, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.actionWash },
+  recommendationIndexPrimary: { backgroundColor: colors.action },
+  recommendationCopy: { flex: 1, gap: spacing.compact },
+  noteRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  noteTag: { borderRadius: radius.full, paddingHorizontal: spacing.compact, paddingVertical: 3, backgroundColor: colors.creamDeep },
+  recommendationWaiting: { gap: spacing.compact, padding: spacing.roomy, borderRadius: radius.large, backgroundColor: colors.creamDeep },
 });
