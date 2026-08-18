@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Linking, Platform, StyleSheet, Switch, View } from 'react-native';
+import { Platform, StyleSheet, Switch, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { Button, Card, Icon, PageHeader, Screen, Text, type SymbolName } from '@/components/ui';
@@ -22,7 +22,6 @@ export default function SettingsScreen() {
     <Card tone="tinted"><View style={styles.cardTitle}><Icon name="bell.badge.fill" size={23} /><Text variant="title3">맛 기록 알림</Text></View><Text color={colors.neutral800}>브루잉을 마친 뒤 맛이 선명할 때 한 번 알려드려요.</Text><Button label={Platform.OS === 'web' ? '모바일 앱에서 사용 가능' : '알림 켜기'} variant="secondary" disabled={Platform.OS === 'web'} onPress={() => void notifications()} /></Card>
     <Card><View style={styles.cardTitle}><Icon name="iphone" size={23} /><Text variant="title3">저장 위치</Text></View><Text color={colors.neutral800}>{storageCopy}</Text></Card>
     <Card><Text variant="title3">데이터와 백업</Text><Text color={colors.neutral800}>현재 기록은 이 기기에만 저장됩니다. 내보내기와 복원 기능은 준비 중이에요.</Text><Button label="백업 기능 준비 중" variant="secondary" disabled /></Card>
-    <Card><Text variant="title3">앱 정보와 오픈소스</Text><Text color={colors.neutral800}>BEANFOLD 0.1.0, SUIT 2.0.5</Text><Button label="SUIT 라이선스 보기" variant="tertiary" onPress={() => void Linking.openURL('https://github.com/sun-typeface/SUIT/blob/main/LICENSE')} /></Card>
   </Screen>;
 }
 function Setting({ icon, label, body, value, onChange }: { icon: SymbolName; label: string; body: string; value: boolean; onChange: (value: boolean) => void }) { return <View style={styles.setting}><View style={styles.settingIcon}><Icon name={icon} size={22} /></View><View style={styles.copy}><Text variant="title3">{label}</Text><Text color={colors.neutral800}>{body}</Text></View><Switch value={value} onValueChange={onChange} accessibilityLabel={label} trackColor={{ false: colors.neutral400, true: colors.espresso }} thumbColor={colors.cream} /></View>; }
