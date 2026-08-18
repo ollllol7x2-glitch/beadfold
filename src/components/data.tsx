@@ -39,7 +39,7 @@ export function CupSummary({ cup }: { cup: Cup }) {
     <Card accessibilityLabel={`${cup.beanName}. ${cup.kind === 'home' ? '홈 브루' : '카페'}. ${cup.satisfaction ? satisfactionLabel[cup.satisfaction] : '평가 대기 중'}.`} style={styles.cupCard}>
       <Image source={cup.imageUri ? { uri: cup.imageUri } : fallbackImage} resizeMode="cover" style={styles.cupImage} accessible={false} />
       <View style={styles.flex}>
-        <View style={styles.row}><Text variant="title3" style={styles.flex}>{cup.beanName}</Text><Icon name={cup.satisfaction === 'loved' ? 'heart.fill' : cup.satisfaction === 'good' ? 'face.smiling' : 'circle'} size={20} color={cup.satisfaction === 'loved' ? colors.action : colors.espresso} /></View>
+        <View style={styles.row}><Text variant="title3" style={styles.flex}>{cup.beanName}</Text><Icon name={cup.satisfaction === 'loved' ? 'heart.fill' : cup.satisfaction === 'good' ? 'face.smiling' : cup.satisfaction === 'not_for_me' ? 'hand.thumbsdown.fill' : 'circle'} size={cup.satisfaction === 'not_for_me' ? 18 : 20} color={cup.satisfaction === 'loved' ? colors.action : colors.espresso} /></View>
         <Text variant="caption" color={colors.neutral600}>{new Date(cup.createdAt).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} · {cup.kind === 'home' ? '홈 브루' : cup.cafeName || '카페'}</Text>
         {cup.recipeSnapshot ? <Text variant="caption">{cup.recipeSnapshot.doseG}g · {cup.recipeSnapshot.waterMl}ml · {cup.recipeSnapshot.temperatureC}℃</Text> : null}
         {cup.flavorTags.length ? <Text variant="caption" color={colors.cocoa}>{cup.flavorTags.slice(0, 3).map(localizedFlavor).join(' · ')}</Text> : null}
