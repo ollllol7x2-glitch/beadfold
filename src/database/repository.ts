@@ -11,6 +11,17 @@ export type AnalyticsEventName =
   | 'cup_recorded' | 'feedback_submitted' | 'journal_viewed' | 'compare_started' | 'compare_completed'
   | 'taste_profile_viewed' | 'gear_added' | 'gear_custom_created';
 
+export type InventoryEvent = {
+  id: string;
+  beanId: string;
+  cupId: string | null;
+  kind: 'brew' | 'adjustment';
+  deltaG: number;
+  remainingWeightG: number;
+  note: string;
+  createdAt: string;
+};
+
 export async function trackEvent(db: SQLiteDatabase, name: AnalyticsEventName, payload: Record<string, string | number | boolean | null> = {}) {
   await db.runAsync(
     'INSERT INTO analytics_events (name, payload_json, created_at) VALUES (?, ?, ?)',
@@ -60,6 +71,14 @@ function cupFromRow(row: Row): Cup {
     memo: String(row.memo), imageUri: row.image_uri ? String(row.image_uri) : null,
     cafeName: String(row.cafe_name), drinkName: String(row.drink_name),
     createdAt: String(row.created_at), updatedAt: String(row.updated_at),
+  };
+}
+
+function inventoryEventFromRow(row: Row): InventoryEvent {
+  return {
+    id: String(row.id), beanId: String(row.bean_id), cupId: row.cup_id ? String(row.cup_id) : null,
+    kind: String(row.kind) as InventoryEvent['kind'], deltaG: Number(row.delta_g), remainingWeightG: Number(row.remaining_weight_g),
+    note: String(row.note), createdAt: String(row.created_at),
   };
 }
 
@@ -200,6 +219,31 @@ export async function updateBean(db: SQLiteDatabase, bean: BeanLot): Promise<voi
   );
 }
 
+export async function adjustBeanInventory(db: SQLiteDatabase, beanId: string, remainingWeightG: number) {
+  const nextWeight = Number(remainingWeightG.toFixed(1));
+  if (!Number.isFinite(nextWeight) || nextWeight < 0 || nextWeight > 10000) throw new Error('남은 양을 0g부터 10,000g 사이로 입력해주세요.');
+  await db.withTransactionAsync(async () => {
+    const row = await db.getFirstAsync<Row>('SELECT * FROM beans WHERE id=?', beanId);
+    if (!row) throw new Error('원두를 찾지 못했어요.');
+    const bean = beanFromRow(row);
+    const deltaG = Number((nextWeight - bean.remainingWeightG).toFixed(1));
+    if (deltaG === 0) return;
+    const now = new Date().toISOString();
+    const state = nextWeight === 0 ? 'finished' : bean.state === 'finished' ? 'opened' : bean.state;
+    await db.runAsync('UPDATE beans SET remaining_weight_g=?, state=?, updated_at=? WHERE id=?', nextWeight, state, now, beanId);
+    await db.runAsync(
+      `INSERT INTO inventory_events (id, bean_id, cup_id, kind, delta_g, remaining_weight_g, note, created_at)
+       VALUES (?, ?, NULL, 'adjustment', ?, ?, '', ?)`,
+      createId('inventory'), beanId, deltaG, nextWeight, now,
+    );
+  });
+}
+
+export async function listInventoryEvents(db: SQLiteDatabase, beanId: string): Promise<InventoryEvent[]> {
+  const rows = await db.getAllAsync<Row>('SELECT * FROM inventory_events WHERE bean_id=? ORDER BY created_at DESC', beanId);
+  return rows.map(inventoryEventFromRow);
+}
+
 export async function archiveBean(db: SQLiteDatabase, id: string) {
   await db.runAsync(
     `UPDATE beans
@@ -219,6 +263,7 @@ export async function restoreBean(db: SQLiteDatabase, id: string) {
 
 export async function deleteBean(db: SQLiteDatabase, id: string) {
   await db.withTransactionAsync(async () => {
+    await db.runAsync('DELETE FROM inventory_events WHERE bean_id=?', id);
     await db.runAsync('UPDATE cups SET bean_id=NULL, brew_session_id=NULL WHERE bean_id=?', id);
     await db.runAsync('UPDATE recipes SET archived=1, bean_id=NULL, updated_at=? WHERE bean_id=?', new Date().toISOString(), id);
     await db.runAsync('DELETE FROM brew_sessions WHERE bean_id=?', id);
@@ -346,6 +391,11 @@ export async function completeBrew(db: SQLiteDatabase, sessionId: string, comple
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       cup.id, cup.brewSessionId, cup.beanId, cup.kind, cup.beanName, JSON.stringify(cup.beanSnapshot),
       JSON.stringify(cup.recipeSnapshot), null, '[]', JSON.stringify(cup.taste), '', null, '', '', nowIso, nowIso,
+    );
+    await db.runAsync(
+      `INSERT INTO inventory_events (id, bean_id, cup_id, kind, delta_g, remaining_weight_g, note, created_at)
+       VALUES (?, ?, ?, 'brew', ?, ?, '', ?)`,
+      createId('inventory'), session.beanId, cup.id, -session.recipeSnapshot.doseG, nextWeight, nowIso,
     );
     await trackEvent(db, 'brew_completed', { brew_id: sessionId, cup_id: cup.id });
     await trackEvent(db, 'cup_recorded', { cup_id: cup.id, kind: 'home' });

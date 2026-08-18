@@ -220,7 +220,7 @@ function Metric({ label, value }: { label: string; value: string }) {
   return <View style={styles.metric}><Text variant="caption" color={colors.neutral600}>{label}</Text><Text variant="label" numberOfLines={2} style={styles.metricValue}>{value}</Text></View>;
 }
 
-const brewSceneColors = ['#EFE9DC', '#F4E2CF', '#DDE9E9', '#F0DDCB', '#E0E8E2'];
+const brewSceneColors = [colors.cream, '#F6F2ED', '#F4F0EB', colors.creamDeep, '#EEE9E2'];
 
 function BrewSceneTransition({ stepIndex }: { stepIndex: number }) {
   const currentIndex = Math.min(Math.max(stepIndex, 0), brewSceneColors.length - 1);
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
   stepProgress: { width: '100%', flexDirection: 'row', gap: 5, marginTop: spacing.default },
   stepTrack: { height: 7, flex: 1, borderRadius: 4, overflow: 'hidden', backgroundColor: colors.neutral200 },
   stepFill: { height: '100%', backgroundColor: colors.espresso },
-  instructionCard: { minHeight: 142, flexDirection: 'row', alignItems: 'center', gap: spacing.default, borderRadius: radius.large, backgroundColor: colors.white, padding: spacing.roomy, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(45,33,27,0.12)' },
+  instructionCard: { minHeight: 142, flexDirection: 'row', alignItems: 'center', gap: spacing.default, borderRadius: radius.large, backgroundColor: colors.white, padding: spacing.roomy, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.neutral200 },
   instructionCardCompact: { minHeight: 124, paddingVertical: spacing.default },
   instructionIcon: { width: 52, height: 52, flexShrink: 0, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
   instructionCopy: { flex: 1, justifyContent: 'center', gap: spacing.compact },

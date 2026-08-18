@@ -13,6 +13,7 @@ import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 const flavors = ['Floral', 'Fruity', 'Juicy', 'Sweet', 'Clean', 'Creamy', 'Nutty', 'Roasty', 'Funky'];
 const flavorLabels: Record<string, string> = { Floral: '꽃향', Fruity: '과일', Juicy: '과즙', Sweet: '달콤함', Clean: '깔끔함', Creamy: '부드러움', Nutty: '고소함', Roasty: '구수함', Funky: '발효향' };
 const tasteLabels: Record<keyof TasteValues, string> = { acidity: '산미', sweetness: '단맛', body: '질감', bitterness: '쓴맛', aroma: '향', aftertaste: '여운', balance: '균형' };
+const supportingSelection = { backgroundColor: colors.terracotta, borderColor: colors.terracotta };
 
 export default function RecordCupScreen() {
   const { cupId } = useLocalSearchParams<{ cupId: string }>();
@@ -66,11 +67,11 @@ export default function RecordCupScreen() {
       })}</View>
       <View style={styles.flavorSection}>
         <View style={styles.sectionCopy}><Text variant="title3">떠오른 맛</Text><Text variant="caption" color={colors.neutral600}>여러 개 골라도 좋아요.</Text></View>
-        <View style={styles.tagChoices}>{flavors.map((flavor) => <Chip key={flavor} label={flavorLabels[flavor]!} selected={tags.includes(flavor)} onPress={() => toggleTag(flavor)} />)}</View>
+        <View style={styles.tagChoices}>{flavors.map((flavor) => <Chip key={flavor} label={flavorLabels[flavor]!} selected={tags.includes(flavor)} selectedStyle={supportingSelection} selectedTextColor={colors.espresso} onPress={() => toggleTag(flavor)} />)}</View>
       </View>
       <Pressable accessibilityRole="button" accessibilityState={{ expanded: detailsOpen }} onPress={() => setDetailsOpen((current) => !current)} style={({ pressed }) => [styles.disclosure, pressed && styles.pressed]}><View style={styles.flex}><Text variant="label">더 자세히 남기기</Text><Text variant="caption" color={colors.neutral600}>향미 점수, 사진, 메모</Text></View><Icon name={detailsOpen ? 'chevron.up' : 'chevron.down'} color={colors.neutral800} /></Pressable>
       {detailsOpen ? <Card style={styles.detailsCard}>
-        {(Object.keys(taste) as (keyof TasteValues)[]).map((key) => <View key={key} style={styles.tasteRow}><View><Text variant="label">{tasteLabels[key]}</Text>{key === 'body' ? <Text variant="caption" color={colors.neutral600}>가벼움에서 묵직함</Text> : null}</View><View style={styles.scoreChoices}>{[1,2,3,4,5].map((value) => <Chip key={value} label={String(value)} selected={taste[key] === value} onPress={() => setTaste((current) => ({ ...current, [key]: current[key] === value ? null : value }))} />)}</View></View>)}
+        {(Object.keys(taste) as (keyof TasteValues)[]).map((key) => <View key={key} style={styles.tasteRow}><View><Text variant="label">{tasteLabels[key]}</Text>{key === 'body' ? <Text variant="caption" color={colors.neutral600}>가벼움에서 묵직함</Text> : null}</View><View style={styles.scoreChoices}>{[1,2,3,4,5].map((value) => <Chip key={value} label={String(value)} selected={taste[key] === value} selectedStyle={supportingSelection} selectedTextColor={colors.espresso} onPress={() => setTaste((current) => ({ ...current, [key]: current[key] === value ? null : value }))} />)}</View></View>)}
         {imageUri ? <Image source={{ uri: imageUri }} style={styles.photo} accessibilityLabel="이 커피의 사진" /> : null}
         <Button label={imageUri ? '사진 바꾸기' : '사진 추가'} variant="secondary" icon="camera.fill" onPress={() => void pickImage()} />
         <Field label="한 줄 메모" value={memo} onChangeText={setMemo} multiline placeholder="다음에는 물 온도를 조금 낮춰보기" style={styles.memo} />

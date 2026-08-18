@@ -39,8 +39,10 @@ import CircleQuestionMark from 'lucide-react-native/icons/circle-question-mark';
 import CircleUserRound from 'lucide-react-native/icons/circle-user-round';
 import Clock from 'lucide-react-native/icons/clock';
 import Coffee from 'lucide-react-native/icons/coffee';
+import Copy from 'lucide-react-native/icons/copy';
 import Cog from 'lucide-react-native/icons/cog';
 import Droplets from 'lucide-react-native/icons/droplets';
+import Ellipsis from 'lucide-react-native/icons/ellipsis';
 import FaceSlightlySmiling from 'lucide-react-native/icons/face-slightly-smiling';
 import Flame from 'lucide-react-native/icons/flame';
 import Footprints from 'lucide-react-native/icons/footprints';
@@ -52,6 +54,7 @@ import House from 'lucide-react-native/icons/house';
 import Leaf from 'lucide-react-native/icons/leaf';
 import ListFilter from 'lucide-react-native/icons/list-filter';
 import Pause from 'lucide-react-native/icons/pause';
+import Pencil from 'lucide-react-native/icons/pencil';
 import Play from 'lucide-react-native/icons/play';
 import Plus from 'lucide-react-native/icons/plus';
 import RefreshCw from 'lucide-react-native/icons/refresh-cw';
@@ -63,6 +66,7 @@ import Sparkles from 'lucide-react-native/icons/sparkles';
 import Thermometer from 'lucide-react-native/icons/thermometer';
 import ThumbsDown from 'lucide-react-native/icons/thumbs-down';
 import Timer from 'lucide-react-native/icons/timer';
+import Trash2 from 'lucide-react-native/icons/trash-2';
 import Vibrate from 'lucide-react-native/icons/vibrate';
 import Volume2 from 'lucide-react-native/icons/volume-2';
 import WandSparkles from 'lucide-react-native/icons/wand-sparkles';
@@ -95,9 +99,11 @@ const iconMap = {
   'cup.and.saucer': Coffee,
   'cup.and.saucer.fill': Coffee,
   'cup.and.heat.waves.fill': Coffee,
+  'doc.on.doc': Copy,
   'camera.fill': Camera,
   'dial.medium': SlidersHorizontal,
   'drop.fill': Droplets,
+  ellipsis: Ellipsis,
   'face.smiling': FaceSlightlySmiling,
   'fast.forward.fill': SkipForward,
   'figure.walk.motion': Footprints,
@@ -119,6 +125,7 @@ const iconMap = {
   magnifyingglass: Search,
   pause: Pause,
   'pause.fill': Pause,
+  pencil: Pencil,
   play: Play,
   'play.fill': Play,
   plus: Plus,
@@ -129,6 +136,7 @@ const iconMap = {
   sparkles: Sparkles,
   'thermometer.medium': Thermometer,
   timer: Timer,
+  trash: Trash2,
   'wand.and.stars': WandSparkles,
   'waterbottle.fill': Droplets,
   xmark: X,
@@ -197,7 +205,7 @@ export function Button({
   icon?: SymbolName;
 }) {
   const inactive = disabled || loading;
-  const foreground = variant === 'primary' || variant === 'danger' ? colors.cream : colors.espresso;
+  const foreground = variant === 'primary' ? colors.white : variant === 'danger' ? colors.error : colors.espresso;
   return (
     <Pressable
       accessibilityRole="button"
@@ -252,7 +260,7 @@ export const Field = forwardRef<TextInput, TextInputProps & { label: string; err
   },
 );
 
-export function Chip({ label, selected, onPress, accessibilityLabel, icon }: { label: string; selected?: boolean; onPress?: () => void; accessibilityLabel?: string; icon?: SymbolName }) {
+export function Chip({ label, selected, onPress, accessibilityLabel, icon, selectedStyle, selectedTextColor = colors.cream }: { label: string; selected?: boolean; onPress?: () => void; accessibilityLabel?: string; icon?: SymbolName; selectedStyle?: ViewStyle; selectedTextColor?: string }) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -260,10 +268,10 @@ export function Chip({ label, selected, onPress, accessibilityLabel, icon }: { l
       accessibilityState={{ selected }}
       onPress={onPress}
       disabled={!onPress}
-      style={({ pressed }) => [styles.chip, selected && styles.chipSelected, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.chip, selected && styles.chipSelected, selected && selectedStyle, pressed && styles.pressed]}
     >
-      {selected ? <Icon name="checkmark" size={13} color={colors.cream} weight="bold" /> : icon ? <Icon name={icon} size={14} color={colors.espresso} /> : null}
-      <Text variant="label" color={selected ? colors.cream : colors.charcoal}>{label}</Text>
+      {selected ? <Icon name="checkmark" size={13} color={selectedTextColor} weight="bold" /> : icon ? <Icon name={icon} size={14} color={colors.espresso} /> : null}
+      <Text variant="label" color={selected ? selectedTextColor : colors.charcoal}>{label}</Text>
     </Pressable>
   );
 }
@@ -453,25 +461,25 @@ const styles = StyleSheet.create({
   contentNoNav: { paddingBottom: spacing.section },
   screenHeader: { zIndex: 20, ...(Platform.OS === 'web' ? { position: 'sticky' as never, top: 0 } : {}), paddingHorizontal: 20, paddingTop: spacing.compact, paddingBottom: spacing.small, backgroundColor: colors.cream, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.neutral200 },
   card: { backgroundColor: colors.white, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.neutral200, borderRadius: radius.large, padding: spacing.default, gap: spacing.small, ...shadows.soft },
-  cardTinted: { backgroundColor: colors.creamDeep, borderColor: colors.warmBeige },
-  cardDark: { backgroundColor: colors.espresso, borderColor: colors.espresso },
+  cardTinted: { backgroundColor: colors.creamDeep, borderColor: colors.neutral200 },
+  cardDark: { backgroundColor: colors.action, borderColor: colors.action },
   button: { minHeight: 54, minWidth: 54, borderRadius: radius.medium, paddingHorizontal: 20, paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
-  buttonPrimary: { backgroundColor: colors.espresso, ...shadows.soft },
+  buttonPrimary: { backgroundColor: colors.action, ...shadows.soft },
   buttonSecondary: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200 },
   buttonTertiary: { backgroundColor: 'transparent', minHeight: 44, paddingHorizontal: spacing.compact },
-  buttonDanger: { backgroundColor: colors.error },
+  buttonDanger: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.error },
   buttonContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.compact },
   buttonText: { textAlign: 'center', fontSize: 15 },
   pressed: { opacity: 0.62, transform: [{ scale: 0.985 }] },
   disabled: { opacity: 0.42 },
   iconButton: { width: 48, height: 48, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' },
   iconOutlined: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200 },
-  iconFilled: { backgroundColor: colors.espresso },
+  iconFilled: { backgroundColor: colors.action },
   fieldWrap: { gap: spacing.compact },
   input: { minHeight: 54, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.medium, backgroundColor: colors.white, paddingHorizontal: 15, paddingVertical: 13, color: colors.charcoal, fontFamily: fonts.regular, fontSize: 16 },
   inputError: { borderColor: colors.error, borderWidth: 2 },
   chip: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.full, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, justifyContent: 'center' },
-  chipSelected: { backgroundColor: colors.espresso, borderColor: colors.espresso },
+  chipSelected: { backgroundColor: colors.action, borderColor: colors.action },
   headerWrap: { gap: spacing.default },
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.default },
   headerCopy: { flex: 1, gap: spacing.compact },
@@ -483,13 +491,13 @@ const styles = StyleSheet.create({
   sectionTitle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.small },
   empty: { paddingVertical: spacing.large, paddingHorizontal: spacing.section, gap: spacing.small, alignItems: 'flex-start', backgroundColor: colors.creamDeep, borderRadius: radius.xl },
   emptyIcon: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
-  navSafe: { backgroundColor: 'rgba(255,253,249,0.98)', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.neutral200 },
+  navSafe: { backgroundColor: 'rgba(255,253,252,0.98)', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.neutral200 },
   nav: { height: 76, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center' },
   navItem: { flex: 1, minHeight: 64, alignItems: 'center', justifyContent: 'center', gap: 3 },
   navIcon: { width: 44, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   navIconSelected: { backgroundColor: colors.creamDeep },
   navAddWrap: { flex: 1.25 },
-  navAdd: { minWidth: 102, height: 52, paddingHorizontal: 14, borderRadius: 26, backgroundColor: colors.espresso, alignItems: 'center', justifyContent: 'center', ...shadows.lifted },
+  navAdd: { minWidth: 102, height: 52, paddingHorizontal: 14, borderRadius: 26, backgroundColor: colors.action, alignItems: 'center', justifyContent: 'center', ...shadows.lifted },
   navLabelSelected: { fontFamily: fonts.bold },
   sheetOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.overlay },
   sheet: { width: '100%', maxWidth: Platform.OS === 'web' ? 520 : undefined, alignSelf: 'center', gap: spacing.small, paddingHorizontal: 20, paddingTop: spacing.compact, paddingBottom: spacing.small, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, backgroundColor: colors.cream },
@@ -499,7 +507,7 @@ const styles = StyleSheet.create({
   sheetAction: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: spacing.small, padding: spacing.small, borderRadius: radius.large, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200 },
   sheetActionIcon: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.creamDeep },
   sheetActionCopy: { flex: 1, gap: 2 },
-  actionBar: { flexDirection: 'row', gap: spacing.compact, paddingHorizontal: 20, paddingTop: spacing.small, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.neutral200, backgroundColor: 'rgba(255,253,249,0.98)' },
+  actionBar: { flexDirection: 'row', gap: spacing.compact, paddingHorizontal: 20, paddingTop: spacing.small, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.neutral200, backgroundColor: 'rgba(255,253,252,0.98)' },
   actionPrimary: { flex: 1 },
   actionSecondary: { flex: 0.72 },
 });

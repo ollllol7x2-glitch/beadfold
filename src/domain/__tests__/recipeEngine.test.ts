@@ -45,8 +45,10 @@ describe('guided recipe engine', () => {
       memo: '', imageUri: null, cafeName: '', drinkName: '', createdAt: now.toISOString(), updatedAt: now.toISOString(),
     };
     const recipe = generateGuidedRecipe({ bean, previousCups: [cup], now });
+    expect(recipe.temperatureC).toBe(87);
+    expect(recipe.totalTimeSec).toBe(210);
     expect(recipe.grindTarget).toBe('내가 좋아한 분쇄도');
-    expect(recipe.explanation.some((reason) => reason.includes('최근 기록'))).toBe(true);
+    expect(recipe.explanation.some((reason) => reason.includes('우선 시작점'))).toBe(true);
     expect(validateRecipe(recipe)).toEqual([]);
   });
 

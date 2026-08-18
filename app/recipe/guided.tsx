@@ -4,7 +4,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { BottomActionBar, Button, Card, EmptyState, Icon, Screen, Text, TopBar } from '@/components/ui';
 import { getBean, listCatalogGear, listCups, listUserGear, saveRecipe, startBrew, trackEvent } from '@/database/repository';
-import { getRecipeAdjustments } from '@/domain/recipeAdjustments';
+import { getNextBrewActions, getRecipeAdjustments } from '@/domain/recipeAdjustments';
 import { generateGuidedRecipe } from '@/domain/recipeEngine';
 import type { BeanLot, Cup, Gear, Recipe } from '@/domain/types';
 import { colors, radius, spacing } from '@/design-system/tokens';
@@ -53,6 +53,7 @@ export default function GuidedRecipeScreen() {
   const headline = bean.roastLevel === 'unknown' ? '균형 잡힌 시작점으로 내려볼게요.' : bean.roastLevel === 'dark' ? '부드럽고 편안하게 내려볼게요.' : bean.process.toLowerCase().includes('natural') ? '달콤하고 풍성하게 내려볼게요.' : '밝고 향긋하게 내려볼게요.';
   const gearNames = ['grinder', 'dripper'].map((category) => gear.find((item) => item.category === category)?.name).filter(Boolean);
   const historyAdjustments = historyBaseline ? getRecipeAdjustments(historyBaseline, recipe) : [];
+  const nextBrewActions = historyBaseline ? getNextBrewActions(historyBaseline, recipe) : [];
 
   return (
     <Screen header={<TopBar title="오늘의 레시피" backLabel="원두" backHref={`/bean/${bean.id}`} />} contentContainerStyle={styles.screen} footer={<BottomActionBar primaryLabel="안내 시작하기" onPrimaryPress={() => void begin()} secondaryLabel="직접 조절" onSecondaryPress={() => router.push(`/recipe/manual?beanId=${bean.id}`)} />}>
@@ -66,8 +67,9 @@ export default function GuidedRecipeScreen() {
       <View style={styles.intro}><Text variant="title1" accessibilityRole="header">{headline}</Text><Text variant="bodyLarge" color={colors.neutral800}>{recipe.grindTarget}로 갈고, {recipe.steps.filter((step) => step.waterDeltaMl > 0).length}번 나눠 부어요.</Text></View>
 
       {preferredCup ? <Card tone="tinted" style={styles.preferenceCard}>
-        <View style={styles.preferenceHeading}><View style={styles.preferenceIcon}><Icon name="heart.fill" size={18} color={colors.terracotta} /></View><View style={styles.flex}><Text variant="label">좋았던 기록을 반영했어요</Text><Text variant="caption" color={colors.neutral600}>{formatCupDate(preferredCup.createdAt)}에 남긴 추출값을 현재 원두·장비 조건과 함께 계산했어요.</Text></View></View>
-        {historyAdjustments.length ? <View style={styles.adjustmentList}><Text variant="caption" color={colors.neutral600}>기본 추천 → 이번 추천</Text>{historyAdjustments.map((adjustment) => <View key={adjustment.label} style={styles.adjustmentRow}><Text variant="label" style={styles.adjustmentLabel}>{adjustment.label}</Text><Text variant="caption" color={colors.neutral800} numberOfLines={1}>{adjustment.before}</Text><Icon name="arrow.right" size={14} color={colors.neutral600} /><Text variant="caption" color={colors.espresso} style={styles.adjustmentAfter} numberOfLines={1}>{adjustment.after}</Text></View>)}</View> : <Text variant="caption" color={colors.neutral800}>좋았던 추출값이 기본 추천과 같아, 그대로 시작해요.</Text>}
+        <View style={styles.preferenceHeading}><View style={styles.preferenceIcon}><Icon name="heart.fill" size={18} color={colors.terracotta} /></View><View style={styles.flex}><Text variant="label">다음 한 잔은 이렇게 해보세요</Text><Text variant="caption" color={colors.neutral600}>{formatCupDate(preferredCup.createdAt)}에 좋았다고 남긴 추출값을 기준으로 잡았어요.</Text></View></View>
+        {nextBrewActions.length ? <View style={styles.actionList}>{nextBrewActions.map((action) => <View key={action.label} style={styles.actionRow}><Text variant="label" style={styles.actionLabel}>{action.label}</Text><Text variant="label" color={colors.espresso}>{action.instruction}</Text></View>)}</View> : <View style={styles.actionList}><View style={styles.actionRow}><Text variant="label" style={styles.actionLabel}>온도</Text><Text variant="label" color={colors.espresso}>{recipe.temperatureC}℃를 유지해요</Text></View><View style={styles.actionRow}><Text variant="label" style={styles.actionLabel}>총 시간</Text><Text variant="label" color={colors.espresso}>{Math.floor(recipe.totalTimeSec / 60)}분 {String(recipe.totalTimeSec % 60).padStart(2, '0')}초를 유지해요</Text></View></View>}
+        {historyAdjustments.length ? <Text variant="caption" color={colors.neutral600}>기본 추천과 달라진 값만 반영했어요.</Text> : null}
       </Card> : null}
 
       <View style={styles.recipeVisual} accessible accessibilityLabel={`원두 ${recipe.doseG}그램, 물 ${recipe.waterMl}밀리리터, ${recipe.temperatureC}도, 총 ${Math.floor(recipe.totalTimeSec / 60)}분 ${recipe.totalTimeSec % 60}초`}>
@@ -116,13 +118,12 @@ const styles = StyleSheet.create({
   beanStrip: { minHeight: 82, flexDirection: 'row', alignItems: 'center', gap: spacing.small, padding: spacing.compact, backgroundColor: colors.white, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.neutral200, borderRadius: radius.large },
   beanImage: { width: 66, height: 66, borderRadius: radius.medium },
   intro: { alignItems: 'center', gap: spacing.compact },
-  preferenceCard: { gap: spacing.small, backgroundColor: colors.berryWash, borderColor: colors.berryWash },
+  preferenceCard: { gap: spacing.small, backgroundColor: colors.creamDeep, borderColor: colors.neutral200 },
   preferenceHeading: { flexDirection: 'row', alignItems: 'center', gap: spacing.compact },
   preferenceIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white },
-  adjustmentList: { gap: 5, paddingTop: spacing.xs, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(150,68,80,0.16)' },
-  adjustmentRow: { minHeight: 22, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  adjustmentLabel: { width: 52 },
-  adjustmentAfter: { flex: 1 },
+  actionList: { gap: 5, paddingTop: spacing.xs, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.neutral200 },
+  actionRow: { minHeight: 24, flexDirection: 'row', alignItems: 'center', gap: spacing.small },
+  actionLabel: { width: 52, color: colors.neutral600 },
   recipeVisual: { height: 330, position: 'relative', alignItems: 'center', justifyContent: 'center' },
   bloom: { width: 218, height: 218, borderRadius: 109 },
   rings: { position: 'absolute', width: 126, height: 126, alignItems: 'center', justifyContent: 'center' },

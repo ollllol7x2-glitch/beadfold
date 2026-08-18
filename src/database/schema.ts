@@ -199,6 +199,19 @@ export async function migrateDatabase(db: SQLiteDatabase) {
 
     CREATE INDEX IF NOT EXISTS cups_created_idx ON cups(created_at DESC);
     CREATE INDEX IF NOT EXISTS cups_bean_idx ON cups(bean_id, created_at DESC);
+
+    CREATE TABLE IF NOT EXISTS inventory_events (
+      id TEXT PRIMARY KEY NOT NULL,
+      bean_id TEXT NOT NULL REFERENCES beans(id),
+      cup_id TEXT UNIQUE REFERENCES cups(id),
+      kind TEXT NOT NULL,
+      delta_g REAL NOT NULL,
+      remaining_weight_g REAL NOT NULL,
+      note TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS inventory_events_bean_created_idx ON inventory_events(bean_id, created_at DESC);
   `);
 
   const cupColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(cups)');

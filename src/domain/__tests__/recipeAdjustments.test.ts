@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getRecipeAdjustments } from '../recipeAdjustments';
+import { getNextBrewActions, getRecipeAdjustments } from '../recipeAdjustments';
 import { generateGuidedRecipe } from '../recipeEngine';
 import type { BeanLot } from '../types';
 
@@ -23,5 +23,15 @@ describe('recipe adjustments', () => {
   it('keeps the list empty when the preference does not change the recommendation', () => {
     const recipe = generateGuidedRecipe({ bean, now: new Date('2026-08-18T00:00:00Z') });
     expect(getRecipeAdjustments(recipe, recipe)).toEqual([]);
+  });
+
+  it('turns a changed recommendation into clear next-brew actions', () => {
+    const baseline = generateGuidedRecipe({ bean, now: new Date('2026-08-18T00:00:00Z') });
+    const recommendation = { ...baseline, temperatureC: 90, totalTimeSec: 180, grindTarget: '중간 굵기' };
+    expect(getNextBrewActions(baseline, recommendation)).toEqual([
+      { label: '온도', instruction: '90℃로 맞춰요' },
+      { label: '총 시간', instruction: '3분 00초까지 추출해요' },
+      { label: '분쇄도', instruction: '중간 굵기로 갈아요' },
+    ]);
   });
 });

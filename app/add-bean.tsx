@@ -23,13 +23,13 @@ const beanStates: { value: BeanState; label: string }[] = [
 ];
 
 export default function AddBeanScreen() {
-  const { editId } = useLocalSearchParams<{ editId?: string }>();
+  const { editId, copyFromId } = useLocalSearchParams<{ editId?: string; copyFromId?: string }>();
   const db = useSQLiteContext();
   const { showFeedback } = useFeedback();
   const [name, setName] = useState('');
   const [weight, setWeight] = useState('');
   const [initialWeight, setInitialWeight] = useState(0);
-  const [detailsOpen, setDetailsOpen] = useState(Boolean(editId));
+  const [detailsOpen, setDetailsOpen] = useState(Boolean(editId || copyFromId));
   const [searchOpen, setSearchOpen] = useState(false);
   const [labelText, setLabelText] = useState('');
   const [roaster, setRoaster] = useState('');
@@ -57,19 +57,25 @@ export default function AddBeanScreen() {
   const { requestExit, allowExit, exitConfirmation } = useUnsavedChangesGuard(isDirty);
 
   useEffect(() => {
-    if (!editId) void trackEvent(db, 'bean_add_started');
-    if (!editId) return;
+    if (!editId && !copyFromId) void trackEvent(db, 'bean_add_started');
+    const sourceId = editId ?? copyFromId;
+    if (!sourceId) return;
     let active = true;
-    void getBean(db, editId).then((bean) => {
+    void getBean(db, sourceId).then((bean) => {
       if (!active || !bean) return;
-      setExisting(bean); setName(bean.name); setRoaster(bean.roaster); setCountry(bean.country); setRegion(bean.region);
-      setVariety(bean.variety); setProcess(bean.process); setRoastDate(bean.roastDate ?? ''); setRoastLevel(bean.roastLevel);
-      setWeight(String(bean.remainingWeightG)); setInitialWeight(bean.initialWeightG); setNotes(bean.tastingNotes.join(', '));
-      setDescription(bean.description); setImageUri(bean.imageUri); setStorageType(bean.storageType); setBeanState(bean.state);
-      setBaseline(beanFormSnapshot(bean));
+      setName(bean.name); setRoaster(bean.roaster); setCountry(bean.country); setRegion(bean.region);
+      setVariety(bean.variety); setProcess(bean.process); setRoastLevel(bean.roastLevel); setNotes(bean.tastingNotes.join(', '));
+      setDescription(bean.description); setStorageType(bean.storageType);
+      if (editId) {
+        setExisting(bean); setRoastDate(bean.roastDate ?? ''); setWeight(String(bean.remainingWeightG)); setInitialWeight(bean.initialWeightG);
+        setImageUri(bean.imageUri); setBeanState(bean.state); setBaseline(beanFormSnapshot(bean));
+      } else {
+        setRoastDate(''); setWeight(''); setInitialWeight(0); setImageUri(null); setBeanState('unopened');
+        setStatus(`${bean.name}의 원두 정보만 가져왔어요. 이번 구매분의 무게와 로스팅 날짜를 새로 입력해주세요.`);
+      }
     });
     return () => { active = false; };
-  }, [db, editId]);
+  }, [copyFromId, db, editId]);
 
   const pickImage = async (camera: boolean) => {
     const permission = camera ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -173,7 +179,7 @@ export default function AddBeanScreen() {
     </Screen>;
   }
 
-  return <Screen showNavigation={false} header={<TaskHeader title={existing ? '원두 정보 수정' : '새 원두 추가'} onClose={() => requestExit(() => goBackOrReplace(existing ? `/bean/${existing.id}` : '/(tabs)/collection'))} />} contentContainerStyle={styles.screen} footer={<BottomActionBar primaryLabel={existing ? '변경사항 저장' : '원두 추가'} primaryLoading={saving} onPrimaryPress={() => void save()} />}>
+  return <Screen showNavigation={false} header={<TaskHeader title={existing ? '원두 정보 수정' : copyFromId ? '새 구매 원두 추가' : '새 원두 추가'} onClose={() => requestExit(() => goBackOrReplace(existing ? `/bean/${existing.id}` : copyFromId ? `/bean/${copyFromId}` : '/(tabs)/collection'))} />} contentContainerStyle={styles.screen} footer={<BottomActionBar primaryLabel={existing ? '변경사항 저장' : '원두 추가'} primaryLoading={saving} onPrimaryPress={() => void save()} />}>
 
     {!existing ? <View style={styles.sources}>
       <SourceAction icon="camera.fill" title="봉투 촬영" body="사진에서 필요한 정보를 찾아 채워요" onPress={() => void pickImage(true)} />

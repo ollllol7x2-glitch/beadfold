@@ -1,6 +1,6 @@
 import type { BeanLot, Cup, Gear, Recipe, RecipeStep, RoastLevel } from './types';
 
-export const RECIPE_RULE_VERSION = 'beanfold-guided-v1.0.0';
+export const RECIPE_RULE_VERSION = 'beanfold-guided-v1.1.0';
 
 export interface GuidedRecipeInput {
   bean: BeanLot;
@@ -107,7 +107,8 @@ export function validateRecipe(recipe: Pick<Recipe, 'doseG' | 'waterMl' | 'tempe
 export function generateGuidedRecipe(input: GuidedRecipeInput): Recipe {
   const { bean } = input;
   const now = input.now ?? new Date();
-  const doseG = clamp(input.doseG ?? 15, 10, 30);
+  const preferred = input.previousCups?.find((cup) => cup.satisfaction === 'loved' && cup.recipeSnapshot)?.recipeSnapshot;
+  const doseG = clamp(input.doseG ?? preferred?.doseG ?? 15, 10, 30);
   const settings = roastSettings(bean.roastLevel);
   const explanations = [
     bean.roastLevel === 'unknown'
@@ -168,13 +169,13 @@ export function generateGuidedRecipe(input: GuidedRecipeInput): Recipe {
   }
   if (input.grinder?.metadata.range === 'stepped') explanations.push(`${input.grinder.name}의 가까운 눈금에서 시작해보세요.`);
 
-  const preferred = input.previousCups?.find((cup) => cup.satisfaction === 'loved' && cup.recipeSnapshot)?.recipeSnapshot;
   if (preferred) {
-    ratio = round((ratio + preferred.ratio) / 2, 1);
-    temperatureC = round((temperatureC + preferred.temperatureC) / 2);
-    totalTimeSec = round((totalTimeSec + preferred.totalTimeSec) / 2);
+    ratio = preferred.ratio;
+    temperatureC = preferred.temperatureC;
+    bloomSec = preferred.bloomSec;
+    totalTimeSec = preferred.totalTimeSec;
     grindTarget = preferred.grindTarget;
-    explanations.push('이 원두로 좋았다고 남긴 최근 기록과 현재 원두·장비 조건의 중간 지점에서 시작해요.');
+    explanations.push('이 원두로 좋았다고 남긴 최근 추출값을 다음 한 잔의 우선 시작점으로 사용해요.');
   }
 
   ratio = round(clamp(ratio, 13, 18), 1);
