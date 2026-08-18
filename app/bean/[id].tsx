@@ -11,6 +11,8 @@ import { ConfirmDialog } from '@/components/confirmDialog';
 import { beanStateLabel, roastLevelLabel } from '@/domain/types';
 import { useFeedback } from '@/components/feedback';
 
+const inventoryReferenceDoseG = 15;
+
 export default function BeanDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const db = useSQLiteContext();
@@ -43,6 +45,7 @@ export default function BeanDetailScreen() {
 
   const hasDetails = Boolean(bean.country || bean.region || bean.variety || bean.process || bean.roastDate || bean.tastingNotes.length || bean.description);
   const preparation = [bean.process, bean.roastLevel === 'unknown' ? '' : roastLevelLabel[bean.roastLevel]].filter(Boolean).join(' · ');
+  const inventoryNotice = getInventoryNotice(bean);
 
   return (
     <Screen header={<PageHeader title={bean.name} backLabel="보관함" backHref="/(tabs)/collection" />}>
@@ -50,7 +53,7 @@ export default function BeanDetailScreen() {
         <Text variant="label">{preparation || '가공·로스팅 정보 미입력'}</Text>
         <Text variant="title1">{bean.remainingWeightG}g</Text>
         <Text color={colors.neutral800}>처음 {bean.initialWeightG}g · {beanStateLabel[bean.state]}</Text>
-        {bean.remainingWeightG < 30 && bean.state !== 'finished' ? <Text accessibilityRole="alert" color={colors.error}>원두가 약 2회분 이하로 남았어요.</Text> : null}
+        {inventoryNotice ? <Text accessibilityRole="alert" color={inventoryNotice.color}>{inventoryNotice.message}</Text> : null}
       </Card>
       <View style={styles.actions}><Button label="직접 조절" variant="secondary" onPress={() => router.push(`/recipe/manual?beanId=${bean.id}`)} style={styles.flex} /><Button label="추천대로 내리기" onPress={() => router.push(`/recipe/guided?beanId=${bean.id}`)} style={styles.flex} /></View>
       <Button label={hasDetails ? '원두 정보 수정' : '원두 정보 추가'} variant="secondary" onPress={() => router.push(`/add-bean?editId=${bean.id}`)} />
@@ -72,4 +75,14 @@ export default function BeanDetailScreen() {
 }
 
 function Detail({ label, value }: { label: string; value: string }) { if (!value) return null; return <View style={styles.detail}><Text variant="label" style={styles.label}>{label}</Text><Text style={styles.flex}>{value}</Text></View>; }
+function getInventoryNotice(bean: BeanLot) {
+  if (bean.state === 'finished') return null;
+  if (bean.remainingWeightG <= 0) return { message: '남은 원두가 없어요.', color: colors.error };
+  if (bean.remainingWeightG < inventoryReferenceDoseG) {
+    const shortage = Number((inventoryReferenceDoseG - bean.remainingWeightG).toFixed(1));
+    return { message: `기준 ${inventoryReferenceDoseG}g보다 ${shortage}g 부족해요.`, color: colors.error };
+  }
+  if (bean.remainingWeightG < inventoryReferenceDoseG * 2) return { message: `기준 ${inventoryReferenceDoseG}g으로 한 번 더 내릴 수 있어요.`, color: colors.cocoa };
+  return null;
+}
 const styles = StyleSheet.create({ hero: { backgroundColor: colors.warmBeige }, actions: { flexDirection: 'row', gap: spacing.small }, flex: { flex: 1 }, detail: { flexDirection: 'row', gap: spacing.default, paddingVertical: spacing.compact, borderBottomWidth: 1, borderBottomColor: colors.neutral200 }, label: { width: 104 }, section: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.small } });

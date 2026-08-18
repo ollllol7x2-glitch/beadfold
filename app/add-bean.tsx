@@ -169,7 +169,7 @@ export default function AddBeanScreen() {
       <View style={styles.successCopy}><Text variant="title1" accessibilityRole="header">원두를 추가했어요</Text><Text variant="bodyLarge" color={colors.neutral800}>{saved.name}. 지금 바로 내리거나, 정보를 더 채울 수 있어요.</Text></View>
       <Button label="이 원두로 바로 내리기" icon="cup.and.heat.waves.fill" onPress={() => { router.dismissAll(); router.push(`/recipe/guided?beanId=${saved.id}`); }} />
       <Button label="원두 정보 더 입력하기" variant="secondary" onPress={() => { setExisting(saved); setBaseline(beanFormSnapshot(saved)); setSaved(null); setDetailsOpen(true); }} />
-      <Button label="보관함에서 보기" variant="tertiary" onPress={() => router.replace(`/bean/${saved.id}`)} />
+      <Button label="보관함에서 보기" variant="tertiary" onPress={() => { router.dismissAll(); router.push('/(tabs)/collection'); }} />
     </Screen>;
   }
 

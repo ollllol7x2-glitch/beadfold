@@ -150,12 +150,13 @@ export function BrandMark({ size = 30 }: { size?: number; inverted?: boolean }) 
 
 const hiddenNavPaths = ['/','/brew'];
 
-export function Screen({ children, scroll = true, contentContainerStyle, showNavigation, footer, header, ...props }: ScrollViewProps & { children: ReactNode; scroll?: boolean; showNavigation?: boolean; footer?: ReactNode; header?: ReactNode }) {
+export function Screen({ children, scroll = true, contentContainerStyle, showNavigation, footer, header, background, backgroundColor = colors.cream, ...props }: ScrollViewProps & { children: ReactNode; scroll?: boolean; showNavigation?: boolean; footer?: ReactNode; header?: ReactNode; background?: ReactNode; backgroundColor?: string }) {
   const pathname = usePathname();
   const navigationVisible = showNavigation ?? !hiddenNavPaths.some((path) => pathname === path || (path !== '/' && pathname.startsWith(path)));
   const hasHeader = Boolean(header);
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', ...(navigationVisible ? [] : ['bottom'] as const)]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor }]} edges={['top', 'left', 'right', ...(navigationVisible ? [] : ['bottom'] as const)]}>
+      {background ? <View pointerEvents="none" style={styles.screenBackground}>{background}</View> : null}
       {header ? <View style={styles.screenHeader}>{header}</View> : null}
       {scroll ? (
         <ScrollView
@@ -442,6 +443,7 @@ function SheetAction({ icon, title, body, onPress }: { icon: SymbolName; title: 
 
 const styles = StyleSheet.create({
   safe: { flex: 1, width: '100%', maxWidth: Platform.OS === 'web' ? 520 : undefined, alignSelf: 'center', backgroundColor: colors.cream },
+  screenBackground: { ...StyleSheet.absoluteFill },
   scroller: { flex: 1 },
   staticContent: { flex: 1 },
   content: { flexGrow: 1, paddingHorizontal: 20, paddingTop: spacing.small, paddingBottom: spacing.large, gap: spacing.roomy },

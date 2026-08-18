@@ -50,19 +50,52 @@ export default function RecordCupScreen() {
 
   if (!cup) return <Screen><Text>컵 기록을 불러오고 있어요…</Text></Screen>;
   return (
-    <Screen showNavigation={false} header={<TaskHeader title="이 커피는 어땠나요?" closeLabel="나중에" onClose={() => requestExit(() => goBackOrReplace('/(tabs)/journal'))} />} footer={<BottomActionBar primaryLabel={cup.satisfaction ? '변경사항 저장' : '맛 기록 저장'} primaryLoading={saving} onPrimaryPress={() => void save()} />}>
+    <Screen showNavigation={false} header={<TaskHeader title="맛 기록" closeLabel="나중에" onClose={() => requestExit(() => goBackOrReplace('/(tabs)/journal'))} />} footer={<BottomActionBar primaryLabel={cup.satisfaction ? '변경사항 저장' : '맛 기록 저장'} primaryLoading={saving} onPrimaryPress={() => void save()} />}>
       {error ? <Text accessibilityRole="alert" color={colors.error}>{error}</Text> : null}
-      <View style={styles.ratings}>{(['not_for_me', 'good', 'loved'] as Satisfaction[]).map((value) => <View key={value} style={styles.ratingChoice}><View style={[styles.ratingIcon, satisfaction === value && styles.ratingIconSelected]}><Icon name={value === 'loved' ? 'heart.fill' : value === 'good' ? 'face.smiling' : 'hand.thumbsdown.fill'} size={25} color={satisfaction === value ? colors.cream : colors.espresso} /></View><Chip label={satisfactionLabel[value]} selected={satisfaction === value} onPress={() => { setSatisfaction(value); setError(''); }} /></View>)}</View>
-      <Text variant="title2">어떤 맛이 떠올랐나요?</Text>
-      <View style={styles.ratings}>{flavors.map((flavor) => <Chip key={flavor} label={flavorLabels[flavor]!} selected={tags.includes(flavor)} onPress={() => toggleTag(flavor)} />)}</View>
-      <Pressable accessibilityRole="button" onPress={() => setDetailsOpen((current) => !current)} style={styles.disclosure}><View style={styles.flex}><Text variant="title3">맛을 더 자세히 남기기</Text><Text color={colors.neutral800}>선택 사항이에요. 원하는 항목만 기록하세요.</Text></View><Icon name={detailsOpen ? 'chevron.up' : 'chevron.down'} /></Pressable>
-      {detailsOpen ? <Card>{(Object.keys(taste) as (keyof TasteValues)[]).map((key) => <View key={key} style={styles.tasteRow}><View><Text variant="label">{tasteLabels[key]}</Text>{key === 'body' ? <Text variant="caption" color={colors.neutral600}>가벼움에서 묵직함</Text> : null}</View><View style={styles.ratings}>{[1,2,3,4,5].map((value) => <Chip key={value} label={String(value)} selected={taste[key] === value} onPress={() => setTaste((current) => ({ ...current, [key]: current[key] === value ? null : value }))} />)}</View></View>)}</Card> : null}
-      {imageUri ? <Image source={{ uri: imageUri }} style={styles.photo} accessibilityLabel="이 커피의 사진" /> : null}
-      <Button label={imageUri ? '사진 바꾸기' : '사진 추가'} variant="secondary" icon="camera.fill" onPress={() => void pickImage()} />
-      <Field label="한 줄 메모" value={memo} onChangeText={setMemo} multiline placeholder="다음에는 물 온도를 조금 낮춰보기" style={styles.memo} />
+      <View style={styles.intro}>
+        <Text variant="title1">첫 모금은 어땠나요?</Text>
+        <Text color={colors.neutral800}>{cup.beanName}</Text>
+      </View>
+      <View style={styles.satisfactionChoices}>{(['not_for_me', 'good', 'loved'] as Satisfaction[]).map((value) => {
+        const selected = satisfaction === value;
+        const icon = value === 'loved' ? 'heart.fill' : value === 'good' ? 'face.smiling' : 'hand.thumbsdown.fill';
+        return <Pressable key={value} accessibilityRole="button" accessibilityLabel={satisfactionLabel[value]} accessibilityState={{ selected }} onPress={() => { setSatisfaction(value); setError(''); }} style={({ pressed }) => [styles.satisfactionChoice, selected && styles.satisfactionChoiceSelected, pressed && styles.pressed]}>
+          <View style={[styles.ratingIcon, selected && styles.ratingIconSelected]}><Icon name={icon} size={23} color={selected ? colors.cream : colors.espresso} /></View>
+          <Text variant="label" color={selected ? colors.cream : colors.charcoal}>{satisfactionLabel[value]}</Text>
+        </Pressable>;
+      })}</View>
+      <View style={styles.flavorSection}>
+        <View style={styles.sectionCopy}><Text variant="title3">떠오른 맛</Text><Text variant="caption" color={colors.neutral600}>여러 개 골라도 좋아요.</Text></View>
+        <View style={styles.tagChoices}>{flavors.map((flavor) => <Chip key={flavor} label={flavorLabels[flavor]!} selected={tags.includes(flavor)} onPress={() => toggleTag(flavor)} />)}</View>
+      </View>
+      <Pressable accessibilityRole="button" accessibilityState={{ expanded: detailsOpen }} onPress={() => setDetailsOpen((current) => !current)} style={({ pressed }) => [styles.disclosure, pressed && styles.pressed]}><View style={styles.flex}><Text variant="label">더 자세히 남기기</Text><Text variant="caption" color={colors.neutral600}>향미 점수, 사진, 메모</Text></View><Icon name={detailsOpen ? 'chevron.up' : 'chevron.down'} color={colors.neutral800} /></Pressable>
+      {detailsOpen ? <Card style={styles.detailsCard}>
+        {(Object.keys(taste) as (keyof TasteValues)[]).map((key) => <View key={key} style={styles.tasteRow}><View><Text variant="label">{tasteLabels[key]}</Text>{key === 'body' ? <Text variant="caption" color={colors.neutral600}>가벼움에서 묵직함</Text> : null}</View><View style={styles.scoreChoices}>{[1,2,3,4,5].map((value) => <Chip key={value} label={String(value)} selected={taste[key] === value} onPress={() => setTaste((current) => ({ ...current, [key]: current[key] === value ? null : value }))} />)}</View></View>)}
+        {imageUri ? <Image source={{ uri: imageUri }} style={styles.photo} accessibilityLabel="이 커피의 사진" /> : null}
+        <Button label={imageUri ? '사진 바꾸기' : '사진 추가'} variant="secondary" icon="camera.fill" onPress={() => void pickImage()} />
+        <Field label="한 줄 메모" value={memo} onChangeText={setMemo} multiline placeholder="다음에는 물 온도를 조금 낮춰보기" style={styles.memo} />
+      </Card> : null}
       {exitConfirmation}
     </Screen>
   );
 }
 
-const styles = StyleSheet.create({ flex: { flex: 1 }, ratings: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.compact }, ratingChoice: { flex: 1, minWidth: 100, alignItems: 'center', gap: spacing.compact }, ratingIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.creamDeep, alignItems: 'center', justifyContent: 'center' }, ratingIconSelected: { backgroundColor: colors.espresso }, disclosure: { minHeight: 70, flexDirection: 'row', alignItems: 'center', gap: spacing.small }, tasteRow: { gap: spacing.compact, paddingTop: spacing.small, borderTopWidth: 1, borderTopColor: colors.neutral200 }, photo: { width: '100%', height: 220, borderRadius: 18 }, memo: { minHeight: 140, textAlignVertical: 'top' } });
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  intro: { gap: spacing.xs, paddingTop: spacing.xs },
+  satisfactionChoices: { flexDirection: 'row', gap: spacing.compact },
+  satisfactionChoice: { flex: 1, minHeight: 112, alignItems: 'center', justifyContent: 'center', gap: spacing.compact, padding: spacing.small, borderWidth: 1, borderColor: colors.neutral200, borderRadius: 18, backgroundColor: colors.white },
+  satisfactionChoiceSelected: { backgroundColor: colors.espresso, borderColor: colors.espresso },
+  ratingIcon: { width: 46, height: 46, borderRadius: 23, backgroundColor: colors.creamDeep, alignItems: 'center', justifyContent: 'center' },
+  ratingIconSelected: { backgroundColor: colors.espressoSoft },
+  flavorSection: { gap: spacing.small },
+  sectionCopy: { gap: 2 },
+  tagChoices: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.compact },
+  disclosure: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: spacing.small, paddingVertical: spacing.compact, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.neutral200 },
+  detailsCard: { gap: spacing.default },
+  tasteRow: { gap: spacing.compact },
+  scoreChoices: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.compact },
+  photo: { width: '100%', height: 220, borderRadius: 18 },
+  memo: { minHeight: 120, textAlignVertical: 'top' },
+  pressed: { opacity: 0.62, transform: [{ scale: 0.985 }] },
+});

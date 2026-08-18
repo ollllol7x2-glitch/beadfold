@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, AppState, Image, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, Animated, AppState, Image, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import * as Haptics from 'expo-haptics';
@@ -124,8 +124,9 @@ export default function BrewScreen() {
     } else void move();
   };
   const stepProgress = Math.min(1, projection.stepElapsedMs / Math.max(1, projection.step.durationSec * 1000));
+  const currentVisual = stepVisual(projection.step);
   return (
-    <Screen scroll={accessibilityScroll} showNavigation={false} contentContainerStyle={[styles.shell, compact && styles.shellCompact]}>
+    <Screen scroll={accessibilityScroll} showNavigation={false} background={<BrewSceneTransition stepIndex={projection.stepIndex} />} contentContainerStyle={[styles.shell, compact && styles.shellCompact]}>
       <ConfirmDialog visible={confirm === 'skip'} title="벌써 다음 단계로 갈까요?" body={`${formatDuration(projection.stepRemainingMs)}가 남아 있어요.`} confirmLabel="다음 단계" onCancel={() => setConfirm(null)} onConfirm={() => { setConfirm(null); const nextSession = skipStep({ ...session, stepIndex: projection.stepIndex }); void persist(nextSession); }} />
       <ConfirmDialog visible={confirm === 'pause'} title="브루잉을 잠시 멈출까요?" body="타이머를 멈추고 홈에서 이어할 수 있어요." confirmLabel="잠시 멈추기" onCancel={() => setConfirm(null)} onConfirm={() => { setConfirm(null); void leave(); }} />
       <ConfirmDialog visible={confirm === 'leave'} title="브루잉을 그만둘까요?" body="컵 기록은 만들지 않아요." confirmLabel="그만두기" destructive onCancel={() => setConfirm(null)} onConfirm={() => { setConfirm(null); void abandonBrew(db, session.id).then(() => router.replace('/(tabs)')); }} />
@@ -140,18 +141,18 @@ export default function BrewScreen() {
       <View accessible accessibilityLiveRegion="polite" accessibilityLabel={`${projection.step.name}. 남은 시간 ${formatDuration(projection.stepRemainingMs)}. 전체 ${formatDuration(projection.totalElapsedMs)} 경과.`} style={[styles.timerZone, compact && styles.timerZoneCompact]}>
         <Text variant="label" color={colors.neutral600}>{session.pausedAt ? '잠시 멈춤' : '남은 시간'}</Text>
         <Text style={[styles.heroTimer, compact && styles.heroTimerCompact]} adjustsFontSizeToFit minimumFontScale={0.72}>{formatDuration(projection.stepRemainingMs)}</Text>
-        <Text variant="bodyLarge" color={colors.neutral800} style={styles.elapsedTime}>{formatDuration(projection.totalElapsedMs)} / {formatDuration(session.recipeSnapshot.totalTimeSec * 1000)}</Text>
+        <Text variant="bodyLarge" color={colors.neutral800} style={styles.elapsedTime}>전체 {formatDuration(projection.totalElapsedMs)} / {formatDuration(session.recipeSnapshot.totalTimeSec * 1000)}</Text>
         <View style={styles.stepProgress}>
           {session.recipeSnapshot.steps.map((step, index) => {
             const fill = index < projection.stepIndex ? 1 : index === projection.stepIndex ? stepProgress : 0;
-            return <View key={step.id} style={styles.stepTrack}><View style={[styles.stepFill, { width: `${fill * 100}%` }]} /></View>;
+            return <View key={step.id} style={styles.stepTrack}><View style={[styles.stepFill, { width: `${fill * 100}%`, backgroundColor: currentVisual.color }]} /></View>;
           })}
         </View>
       </View>
 
       <View style={[styles.instructionCard, compact && styles.instructionCardCompact]}>
-        <View style={styles.instructionIcon} accessible={false}>
-          <Icon name={projection.step.waterDeltaMl ? 'drop.fill' : 'timer'} size={25} color={colors.espresso} weight="semibold" />
+        <View style={[styles.instructionIcon, { backgroundColor: colors.creamDeep }]} accessible={false}>
+          <Icon name={currentVisual.icon} size={25} color={currentVisual.color} weight="semibold" />
         </View>
         <View style={styles.instructionCopy}>
           <Text variant="label" color={colors.espresso}>지금 할 일</Text>
@@ -159,12 +160,12 @@ export default function BrewScreen() {
         </View>
       </View>
 
-      <View style={styles.metrics} accessible accessibilityLabel={`지금 ${projection.step.waterDeltaMl ? `${projection.step.waterDeltaMl}밀리리터` : `${projection.step.durationSec}초 기다리기`}. 누적 ${projection.step.waterTotalMl}밀리리터. ${next ? `다음 ${next.name}` : '마지막 단계'}`}>
+      <View style={styles.metrics} accessible accessibilityLabel={`지금 ${projection.step.waterDeltaMl ? `${projection.step.waterDeltaMl}밀리리터` : `${projection.step.durationSec}초 기다리기`}. ${next ? `다음 ${next.name}. ` : ''}누적 ${projection.step.waterTotalMl}밀리리터.`}>
         <Metric label="지금" value={projection.step.waterDeltaMl ? `${projection.step.waterDeltaMl}ml` : '기다리기'} />
         <View style={styles.metricDivider} />
-        <Metric label="누적" value={`${projection.step.waterTotalMl} / ${session.recipeSnapshot.waterMl}ml`} />
+        <Metric label="다음" value={next ? next.name : '맛 남기기'} />
         <View style={styles.metricDivider} />
-        <Metric label="다음" value={next ? `${next.name}\n${next.waterDeltaMl ? `${next.waterDeltaMl}ml` : `${next.durationSec}초`}` : '맛 남기기'} />
+        <Metric label="누적" value={`${projection.step.waterTotalMl} / ${session.recipeSnapshot.waterMl}ml`} />
       </View>
 
       <View style={styles.bottomArea}>
@@ -219,6 +220,32 @@ function Metric({ label, value }: { label: string; value: string }) {
   return <View style={styles.metric}><Text variant="caption" color={colors.neutral600}>{label}</Text><Text variant="label" numberOfLines={2} style={styles.metricValue}>{value}</Text></View>;
 }
 
+const brewSceneColors = ['#EFE9DC', '#F4E2CF', '#DDE9E9', '#F0DDCB', '#E0E8E2'];
+
+function BrewSceneTransition({ stepIndex }: { stepIndex: number }) {
+  const currentIndex = Math.min(Math.max(stepIndex, 0), brewSceneColors.length - 1);
+  const [previousIndex, setPreviousIndex] = useState(currentIndex);
+  const previousIndexRef = useRef(currentIndex);
+  const [fade] = useState(() => new Animated.Value(1));
+
+  useEffect(() => {
+    if (previousIndexRef.current === currentIndex) return;
+    setPreviousIndex(previousIndexRef.current);
+    previousIndexRef.current = currentIndex;
+    fade.setValue(0);
+    Animated.timing(fade, { toValue: 1, duration: 520, useNativeDriver: true }).start(() => setPreviousIndex(currentIndex));
+  }, [currentIndex, fade]);
+
+  return <View accessible={false} pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: brewSceneColors[previousIndex] }]}><Animated.View style={[StyleSheet.absoluteFill, { opacity: fade, backgroundColor: brewSceneColors[currentIndex] }]} /></View>;
+}
+
+function stepVisual(step: RecipeStep) {
+  if (step.action === 'bloom') return { label: '뜸들이기', icon: 'drop.fill' as const, tone: 'pour' as const, color: colors.cocoa };
+  if (step.waterDeltaMl > 0 || step.action === 'pour') return { label: '물을 붓는 중', icon: 'drop.fill' as const, tone: 'pour' as const, color: colors.cocoa };
+  if (step.action === 'wait') return { label: '기다리는 중', icon: 'timer' as const, tone: 'wait' as const, color: colors.teal };
+  return { label: '추출 진행 중', icon: 'timer' as const, tone: 'wait' as const, color: colors.teal };
+}
+
 function friendlyInstruction(step: RecipeStep) {
   if (!step.waterDeltaMl) return step.instruction || '물이 고르게 내려가도록 기다려주세요.';
   if (/bloom|뜸/i.test(step.instruction) || step.action === 'bloom') return `가운데부터 천천히 ${step.waterDeltaMl}ml를 부어주세요.`;
@@ -255,15 +282,15 @@ const styles = StyleSheet.create({
   countdownNumber: { fontFamily: fonts.bold, fontSize: 124, lineHeight: 138, letterSpacing: -4, color: colors.espresso },
   timerZone: { alignItems: 'center', gap: spacing.xs, paddingTop: spacing.default, paddingBottom: spacing.small },
   timerZoneCompact: { paddingTop: spacing.compact, paddingBottom: spacing.compact },
-  heroTimer: { fontFamily: fonts.bold, fontSize: 124, lineHeight: 136, letterSpacing: -4.5, color: colors.espresso, fontVariant: ['tabular-nums'], marginVertical: spacing.xs },
-  heroTimerCompact: { fontSize: 106, lineHeight: 116, letterSpacing: -4 },
+  heroTimer: { fontFamily: fonts.bold, fontSize: 186, lineHeight: 198, letterSpacing: -6, color: colors.espresso, fontVariant: ['tabular-nums'], marginVertical: spacing.xs },
+  heroTimerCompact: { fontSize: 156, lineHeight: 168, letterSpacing: -5.5 },
   elapsedTime: { marginTop: spacing.xs },
   stepProgress: { width: '100%', flexDirection: 'row', gap: 5, marginTop: spacing.default },
   stepTrack: { height: 7, flex: 1, borderRadius: 4, overflow: 'hidden', backgroundColor: colors.neutral200 },
   stepFill: { height: '100%', backgroundColor: colors.espresso },
-  instructionCard: { minHeight: 142, flexDirection: 'row', alignItems: 'center', gap: spacing.default, borderRadius: radius.large, backgroundColor: colors.creamDeep, padding: spacing.roomy },
+  instructionCard: { minHeight: 142, flexDirection: 'row', alignItems: 'center', gap: spacing.default, borderRadius: radius.large, backgroundColor: colors.white, padding: spacing.roomy, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(45,33,27,0.12)' },
   instructionCardCompact: { minHeight: 124, paddingVertical: spacing.default },
-  instructionIcon: { width: 52, height: 52, flexShrink: 0, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white },
+  instructionIcon: { width: 52, height: 52, flexShrink: 0, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
   instructionCopy: { flex: 1, justifyContent: 'center', gap: spacing.compact },
   instructionText: { fontFamily: fonts.semibold, fontSize: 25, lineHeight: 34, letterSpacing: -0.4, color: colors.charcoal },
   instructionTextCompact: { fontSize: 22, lineHeight: 30 },
