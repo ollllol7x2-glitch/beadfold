@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { Card, Icon, PageHeader, PageIntro, Screen, Text } from '@/components/ui';
+import { Card, Icon, PageHeader, Screen, Text } from '@/components/ui';
 import { listCups, trackEvent } from '@/database/repository';
 import { calculateTasteProfile } from '@/domain/tasteProfile';
 import { localizedFlavor, roastLevelLabel, type RoastLevel, type TasteDimension, type TasteProfile } from '@/domain/types';
@@ -13,7 +13,6 @@ export default function TasteProfileScreen() {
   const [profile, setProfile] = useState<TasteProfile>(calculateTasteProfile([]));
   useFocusEffect(useCallback(() => { let active = true; void trackEvent(db, 'taste_profile_viewed'); void listCups(db).then((cups) => { if (active) setProfile(calculateTasteProfile(cups)); }); return () => { active = false; }; }, [db]));
   return <Screen header={<PageHeader title="나의 커피 취향" backLabel="프로필" backHref="/(tabs)/profile" />} contentContainerStyle={styles.screen}>
-    <PageIntro>좋았던 커피에서 반복되는 맛을 모았어요.</PageIntro>
     <View style={styles.hero}><View style={styles.heroIcon}><Icon name="heart.fill" size={30} color={colors.terracotta} /></View><Text variant="caption" color={colors.cocoa}>요즘의 취향</Text><Text variant="title1">{profile.insight}</Text><Text color={colors.neutral800}>맛을 남긴 커피 {profile.ratedCupCount}잔{profile.averageScore != null ? `, 평균 만족도 ${profile.averageScore} / 3` : ''}</Text></View>
     <Card><Text variant="title3">최근 변화</Text><Text color={colors.neutral800}>{profile.recentTrend}</Text></Card>
     {profile.ratedCupCount < 3 ? <Card tone="tinted"><Text variant="title3">조금만 더 마셔볼까요?</Text><Text color={colors.neutral800}>세 잔부터 반복되는 취향을 살펴봐요. 지금은 결론을 서두르지 않을게요.</Text></Card> : null}

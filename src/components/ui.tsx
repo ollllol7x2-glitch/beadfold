@@ -221,11 +221,6 @@ export function Chip({ label, selected, onPress, accessibilityLabel, icon }: { l
   );
 }
 
-/** Use this in scroll content for supporting copy; sticky headers stay limited to orientation and actions. */
-export function PageIntro({ children }: { children: ReactNode }) {
-  return <Text variant="bodyLarge" color={colors.neutral800}>{children}</Text>;
-}
-
 export function PageHeader({ eyebrow, title, action, backLabel, backHref }: { eyebrow?: string; title: string; action?: ReactNode; backLabel?: string; backHref?: Href }) {
   if (backLabel) {
     return (
