@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { CupSummary, RecipeSummary } from '@/components/data';
-import { Button, Card, EmptyState, PageHeader, PageIntro, Screen, Text } from '@/components/ui';
+import { Button, Card, EmptyState, PageHeader, Screen, Text } from '@/components/ui';
 import { archiveBean, deleteBean, getBean, listCups, listRecipes } from '@/database/repository';
 import type { BeanLot, Cup, Recipe } from '@/domain/types';
 import { colors, spacing } from '@/design-system/tokens';
@@ -46,7 +46,6 @@ export default function BeanDetailScreen() {
 
   return (
     <Screen header={<PageHeader title={bean.name} backLabel="보관함" backHref="/(tabs)/collection" />}>
-      <PageIntro>{[bean.roaster, bean.country, bean.region].filter(Boolean).join(' · ') || '직접 등록한 원두'}</PageIntro>
       <Card style={styles.hero}>
         <Text variant="label">{preparation || '가공·로스팅 정보 미입력'}</Text>
         <Text variant="title1">{bean.remainingWeightG}g</Text>
@@ -65,9 +64,9 @@ export default function BeanDetailScreen() {
       {recipes.length ? recipes.map((recipe) => <RecipeSummary key={recipe.id} recipe={recipe} />) : <Text color={colors.neutral800}>아직 저장한 레시피가 없어요.</Text>}
       <View style={styles.section}><Text variant="title2">이 원두로 마신 커피</Text>{cups.length >= 2 ? <Button label="맛 비교" variant="secondary" onPress={() => router.push(`/compare?beanId=${bean.id}`)} /> : null}</View>
       {cups.length ? cups.slice(0, 4).map((cup) => <CupSummary key={cup.id} cup={cup} />) : <Text color={colors.neutral800}>첫 브루잉을 완료하면 경험이 여기에 남아요.</Text>}
-      <Button label="원두 보관" variant="secondary" onPress={() => setConfirmation('archive')} />
+      {bean.state === 'finished' ? <Button label="다 마신 원두 보관" variant="secondary" onPress={() => setConfirmation('archive')} /> : null}
       <Button label="원두 영구 삭제" variant="danger" onPress={() => setConfirmation('delete')} />
-      <ConfirmDialog visible={confirmation != null} title={confirmation === 'delete' ? '이 원두를 삭제할까요?' : '이 원두를 보관할까요?'} body={confirmation === 'delete' ? '원두 정보는 삭제하지만 이미 마신 커피 기록은 그대로 남아요.' : '기본 목록에서는 숨기고 현재 상태는 그대로 기억해둘게요.'} confirmLabel={confirmation === 'delete' ? '삭제' : '보관'} destructive={confirmation === 'delete'} onCancel={() => setConfirmation(null)} onConfirm={() => void confirm()} />
+      <ConfirmDialog visible={confirmation != null} title={confirmation === 'delete' ? '이 원두를 삭제할까요?' : '다 마신 원두를 보관할까요?'} body={confirmation === 'delete' ? '원두 정보는 삭제하지만 이미 마신 커피 기록은 그대로 남아요.' : '기본 목록에서만 숨겨요. 이 원두로 남긴 커피 기록은 계속 볼 수 있어요.'} confirmLabel={confirmation === 'delete' ? '삭제' : '보관'} destructive={confirmation === 'delete'} onCancel={() => setConfirmation(null)} onConfirm={() => void confirm()} />
     </Screen>
   );
 }
