@@ -181,7 +181,7 @@ export default function BrewScreen() {
 function BrewTopBar({ title, subtitle, onLeave }: { title: string; subtitle: string; onLeave: () => void }) {
   return (
     <View style={styles.topBar}>
-      <Pressable accessibilityRole="button" accessibilityLabel="나가기" onPress={onLeave} style={styles.topSide}><Icon name="chevron.left" size={18} /><Text variant="label">나가기</Text></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel="나가기" onPress={onLeave} style={styles.topSide}><Icon name="chevron.left" size={24} /></Pressable>
       <View style={styles.stepHeading}><Text variant="caption" color={colors.neutral600}>{subtitle}</Text><Text variant="title3" accessibilityRole="header" numberOfLines={1}>{title}</Text></View>
       <View style={styles.topSide} />
     </View>
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   shellCompact: { gap: spacing.compact },
   flex: { flex: 1 },
   topBar: { minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  topSide: { width: 86, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  topSide: { width: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
   stepHeading: { flex: 1, alignItems: 'center', gap: 1 },
   readyBody: { flex: 1, justifyContent: 'space-between', gap: spacing.small },
   readyHeading: { alignItems: 'center', gap: 2 },

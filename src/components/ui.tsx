@@ -261,10 +261,10 @@ export function TaskHeader({ title, onClose, closeLabel = '닫기' }: { title: s
 
 export function TopBar({ title, backLabel, backHref, action }: { title: string; backLabel?: string; backHref?: Href; action?: ReactNode }) {
   return (
-    <View style={styles.topBar}>
-      {backLabel ? <Pressable accessibilityRole="button" accessibilityLabel={`${backLabel}${directionParticle(backLabel)} 돌아가기`} onPress={() => goBackOrReplace(backHref ?? '/(tabs)')} style={styles.topBarSide}><Icon name="chevron.left" size={18} /><Text variant="label">{backLabel}</Text></Pressable> : <View style={styles.topBarSide} />}
-      <Text variant="title3" accessibilityRole="header" numberOfLines={1} style={styles.topBarTitle}>{title}</Text>
-      <View style={[styles.topBarSide, styles.topBarRight]}>{action}</View>
+    <View style={styles.compactHeader}>
+      {backLabel ? <Pressable accessibilityRole="button" accessibilityLabel={`${backLabel}${directionParticle(backLabel)} 돌아가기`} onPress={() => goBackOrReplace(backHref ?? '/(tabs)')} style={styles.headerSide}><Icon name="chevron.left" size={24} /></Pressable> : <View style={styles.headerSide} />}
+      <Text variant="title3" accessibilityRole="header" numberOfLines={1} style={styles.compactHeaderTitle}>{title}</Text>
+      <View style={[styles.headerSide, styles.headerAction]}>{action}</View>
     </View>
   );
 }
@@ -432,10 +432,6 @@ const styles = StyleSheet.create({
   headerSide: { width: 48, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   headerAction: { alignItems: 'flex-end' },
   eyebrow: { letterSpacing: 1.4, textTransform: 'uppercase', fontFamily: fonts.semibold },
-  topBar: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: -4 },
-  topBarSide: { width: 92, minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 4 },
-  topBarRight: { justifyContent: 'flex-end' },
-  topBarTitle: { flex: 1, textAlign: 'center' },
   sectionTitle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.small },
   empty: { paddingVertical: spacing.large, paddingHorizontal: spacing.section, gap: spacing.small, alignItems: 'flex-start', backgroundColor: colors.creamDeep, borderRadius: radius.xl },
   emptyIcon: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
