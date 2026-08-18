@@ -4,8 +4,8 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { BottomActionBar, BottomSheet, Button, Card, Chip, Field, goBackOrReplace, Icon, Screen, TaskHeader, Text } from '@/components/ui';
 import { createManualRecipe, validateRecipe } from '@/domain/recipeEngine';
-import type { BeanLot, Gear, Recipe } from '@/domain/types';
-import { deleteRecipe, duplicateRecipe, getBean, getRecipe, listBeans, listUserGear, saveRecipe, startBrew } from '@/database/repository';
+import type { BeanLot, Cup, Gear, Recipe } from '@/domain/types';
+import { deleteRecipe, duplicateRecipe, getBean, getCup, getRecipe, listBeans, listUserGear, saveRecipe, startBrew } from '@/database/repository';
 import { colors, spacing } from '@/design-system/tokens';
 import { ConfirmDialog } from '@/components/confirmDialog';
 import { useFeedback } from '@/components/feedback';
@@ -20,7 +20,7 @@ const equipmentFields: { key: EquipmentField; label: string; category: Gear['cat
 ];
 
 export default function ManualRecipeScreen() {
-  const { beanId, recipeId } = useLocalSearchParams<{ beanId?: string; recipeId?: string }>();
+  const { beanId, recipeId, sourceCupId } = useLocalSearchParams<{ beanId?: string; recipeId?: string; sourceCupId?: string }>();
   const db = useSQLiteContext();
   const { showFeedback } = useFeedback();
   const [bean, setBean] = useState<BeanLot | null>(null);
@@ -32,18 +32,19 @@ export default function ManualRecipeScreen() {
   const [baseline, setBaseline] = useState('');
   const [ownedGear, setOwnedGear] = useState<Gear[]>([]);
   const [pickerField, setPickerField] = useState<EquipmentField | null>(null);
+  const [sourceCupName, setSourceCupName] = useState<string | null>(null);
 
   useFocusEffect(useCallback(() => {
     let active = true;
     (async () => {
-      const [stored, beans, gear] = await Promise.all([recipeId ? getRecipe(db, recipeId) : null, listBeans(db), listUserGear(db)]);
-      const targetBean = await getBean(db, beanId ?? stored?.beanId ?? '') ?? beans[0] ?? null;
+      const [stored, sourceCup, beans, gear] = await Promise.all([recipeId ? getRecipe(db, recipeId) : null, sourceCupId ? getCup(db, sourceCupId) : null, listBeans(db), listUserGear(db)]);
+      const targetBean = await getBean(db, beanId ?? sourceCup?.beanId ?? stored?.beanId ?? '') ?? beans[0] ?? null;
       if (!active || !targetBean) return;
-      const targetRecipe = stored ?? createManualRecipe(targetBean);
-      setBean(targetBean); setRecipe(targetRecipe); setOwnedGear(gear); setBaseline(JSON.stringify(targetRecipe));
+      const targetRecipe = stored ?? (sourceCup?.recipeSnapshot ? createRecipeFromCup(sourceCup, targetBean) : createManualRecipe(targetBean));
+      setBean(targetBean); setRecipe(targetRecipe); setOwnedGear(gear); setSourceCupName(sourceCup?.recipeSnapshot ? sourceCup.beanName : null); setBaseline(JSON.stringify(targetRecipe));
     })();
     return () => { active = false; };
-  }, [beanId, db, recipeId]));
+  }, [beanId, db, recipeId, sourceCupId]));
 
   const recipeSnapshot = recipe ? JSON.stringify(recipe) : '';
   const isDirty = Boolean(baseline && recipeSnapshot && baseline !== recipeSnapshot);
@@ -102,6 +103,7 @@ export default function ManualRecipeScreen() {
   return (
     <Screen showNavigation={false} header={<TaskHeader title="내 방식으로 내리기" onClose={() => requestExit(() => goBackOrReplace(`/bean/${bean.id}`))} />} footer={<BottomActionBar primaryLabel="이 레시피로 브루잉" primaryDisabled={Boolean(validation.length)} onPrimaryPress={() => void brew()} secondaryLabel="저장" onSecondaryPress={() => void save()} />}>
       {errors.length ? <Card style={styles.error}>{errors.map((error) => <Text key={error} accessibilityRole="alert" color={colors.error}>오류: {error}</Text>)}</Card> : null}
+      {sourceCupName ? <Card tone="tinted"><Text variant="label">더 좋았던 기록을 가져왔어요</Text><Text color={colors.neutral800}>{sourceCupName}의 추출값을 시작점으로, 필요하면 조금만 조절해보세요.</Text></Card> : null}
       {saved ? <Text accessibilityRole="alert" color={colors.neutral800}>저장했어요. 다음에도 이 레시피를 사용할 수 있어요.</Text> : null}
       <Field label="레시피 이름" value={recipe.name} onChangeText={(value) => updateText('name', value)} />
       <Text variant="label">추출 방식</Text><View style={styles.chips}><Chip label="따뜻하게" selected={recipe.hotIce === 'hot'} onPress={() => setRecipe({ ...recipe, hotIce: 'hot' })} /><Chip label="차갑게" selected={recipe.hotIce === 'ice'} onPress={() => setRecipe({ ...recipe, hotIce: 'ice' })} /></View>
@@ -115,6 +117,23 @@ export default function ManualRecipeScreen() {
       {exitConfirmation}
     </Screen>
   );
+}
+
+function createRecipeFromCup(cup: Cup, bean: BeanLot): Recipe {
+  const source = cup.recipeSnapshot!;
+  const base = createManualRecipe(bean);
+  return {
+    ...source,
+    id: base.id,
+    beanId: bean.id,
+    type: 'manual',
+    name: `${bean.name}에서 이어쓰기`,
+    source: '비교에서 가져온 기록',
+    explanation: [`${cup.beanName}의 더 좋았던 기록을 다음 추출의 시작점으로 가져왔어요.`],
+    createdAt: base.createdAt,
+    updatedAt: base.updatedAt,
+    steps: source.steps.map((step, index) => ({ ...step, id: `${base.id}-step-${index}` })),
+  };
 }
 
 function EquipmentSelect({ label, value, options, onOpen, onChange }: { label: string; value: string; options: string[]; onOpen: () => void; onChange: (value: string) => void }) {

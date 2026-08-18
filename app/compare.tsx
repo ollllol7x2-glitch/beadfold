@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { EmptyState, Icon, PageHeader, Screen, Text } from '@/components/ui';
 import { listCups, trackEvent } from '@/database/repository';
@@ -38,6 +38,7 @@ export default function CompareScreen() {
   const tastes = chosen.length === 2 ? tasteDifferences(chosen) : [];
   const scores = chosen.map((cup) => cup.satisfaction ? satisfactionScore[cup.satisfaction] : null);
   const winner = scores[0] != null && scores[1] != null && scores[0] !== scores[1] ? (scores[0]! > scores[1]! ? 0 : 1) : null;
+  const winningCup = winner == null ? null : chosen[winner] ?? null;
   const beanNames = [...new Set(chosen.map((cup) => cup.beanName))];
   const isSameBean = beanNames.length <= 1;
   const introTitle = isSameBean ? beanNames[0] ?? cups[0]!.beanName : '서로 다른 원두';
@@ -52,6 +53,7 @@ export default function CompareScreen() {
       <ResultSummary cups={chosen} winner={winner} />
       <DifferenceSection title="달라진 추출값" differences={variables} empty="두 잔의 추출 조건이 같아요." />
       <DifferenceSection title="맛의 차이" differences={tastes} empty="세부 맛 점수는 같거나 아직 기록하지 않았어요." />
+      {winningCup?.beanId && winningCup.recipeSnapshot ? <Pressable accessibilityRole="button" accessibilityLabel={`${winningCup.beanName}의 더 좋았던 기록으로 다시 내리기`} onPress={() => router.push(`/recipe/manual?beanId=${winningCup.beanId}&sourceCupId=${winningCup.id}`)} style={({ pressed }) => [styles.repeatAction, pressed && styles.pressed]}><View style={styles.repeatActionIcon}><Icon name="arrow.clockwise" size={20} color={colors.cream} /></View><View style={styles.repeatActionCopy}><Text variant="label">더 좋았던 기록으로 다시 내리기</Text><Text variant="caption" color={colors.neutral800}>{winningCup.beanName}의 추출값을 시작점으로 가져와요.</Text></View><Icon name="chevron.right" size={17} color={colors.espresso} /></Pressable> : null}
     </>}
   </Screen>;
 }
@@ -118,6 +120,9 @@ const styles = StyleSheet.create({
   selectorTitle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs },
   result: { gap: spacing.small, padding: spacing.default, borderRadius: radius.large, backgroundColor: colors.creamDeep, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.warmBeige },
   resultHeading: { flexDirection: 'row', alignItems: 'center', gap: spacing.compact },
+  repeatAction: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: spacing.small, padding: spacing.small, borderRadius: radius.large, backgroundColor: colors.creamDeep, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.neutral200 },
+  repeatActionIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.espresso },
+  repeatActionCopy: { flex: 1, gap: 2 },
   cupOverview: { flexDirection: 'row', gap: spacing.small, paddingTop: spacing.small, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.warmBeige },
   cupOverviewItem: { flex: 1, gap: 2 },
   section: { gap: spacing.small },
