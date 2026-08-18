@@ -10,7 +10,7 @@ import { colors, radius, shadows, spacing } from '@/design-system/tokens';
 
 type Experience = 'beginner' | 'casual' | 'advanced';
 type Goal = 'guided' | 'repeat' | 'explore';
-type SuggestedAction = { icon: Parameters<typeof Icon>[0]['name']; eyebrow: string; title: string; body: string; label: string; path: string };
+type SuggestedAction = { icon: Parameters<typeof Icon>[0]['name']; eyebrow?: string; title: string; body: string; label?: string; actionIcon?: Parameters<typeof Icon>[0]['name']; path: string };
 
 export default function HomeScreen() {
   const db = useSQLiteContext();
@@ -60,12 +60,13 @@ export default function HomeScreen() {
   const pendingCup = cups.find((cup) => cup.kind === 'home' && !cup.satisfaction);
   const lastHomeCup = cups.find((cup) => cup.kind === 'home' && cup.beanId);
   const cupsForToday = today ? cups.filter((cup) => cup.kind === 'home' && cup.beanId === today.id) : [];
+  const comparableCups = cups.filter((cup) => cup.kind === 'home' && cup.beanId);
   const lovedCupForToday = cupsForToday.find((cup) => cup.satisfaction === 'loved' && cup.recipeSnapshot);
   const remainingServings = today && todayRecipe ? Math.floor(today.remainingWeightG / todayRecipe.doseG) : null;
   const suggestedAction: SuggestedAction | null = interrupted ? null : pendingCup
     ? { icon: 'heart.fill', eyebrow: '아직 남은 한 단계', title: '방금 마신 커피는 어땠나요?', body: '첫 느낌만 골라도 다음 추천에 반영돼요.', label: '맛 기록 남기기', path: `/record-cup/${pendingCup.id}` }
-    : today && cupsForToday.length >= 2
-      ? { icon: 'arrow.left.arrow.right', eyebrow: '비교할 기록이 준비됐어요', title: '같은 원두의 두 잔을 비교해볼까요?', body: '달라진 추출값과 만족도를 나란히 볼 수 있어요.', label: '두 잔 비교하기', path: `/compare?beanId=${today.id}` }
+    : comparableCups.length >= 2
+      ? { icon: 'arrow.left.arrow.right', title: '두 잔을 비교해보세요', body: '원두·추출 조건·맛의 차이를 확인해요.', actionIcon: 'arrow.right', path: '/compare' }
       : today && remainingServings === 0
         ? { icon: 'leaf.fill', eyebrow: `현재 추천 ${todayRecipe?.doseG}g 기준`, title: '한 잔 분량이 조금 부족해요', body: `${today.name}은 ${today.remainingWeightG}g 남았어요. ${Number((todayRecipe!.doseG - today.remainingWeightG).toFixed(1))}g을 더 준비하거나 다른 원두를 골라보세요.`, label: '보관함 보기', path: '/(tabs)/collection' }
         : today && remainingServings === 1
@@ -183,8 +184,8 @@ function roastAgeLabel(roastDate: string | null) {
   return `로스팅 후 ${days}일`;
 }
 
-function NextAction({ icon, eyebrow, title, body, label, onPress }: { icon: Parameters<typeof Icon>[0]['name']; eyebrow: string; title: string; body: string; label: string; onPress: () => void }) {
-  return <Card tone="tinted" style={styles.nextAction}><View style={styles.nextIcon}><Icon name={icon} size={22} color={colors.espresso} /></View><View style={styles.flex}><Text variant="caption" color={colors.cocoa}>{eyebrow}</Text><Text variant="title3">{title}</Text><Text variant="caption" color={colors.neutral800}>{body}</Text></View><Button label={label} variant="tertiary" onPress={onPress} style={styles.nextButton} /></Card>;
+function NextAction({ icon, eyebrow, title, body, label, actionIcon, onPress }: { icon: Parameters<typeof Icon>[0]['name']; eyebrow?: string; title: string; body: string; label?: string; actionIcon?: Parameters<typeof Icon>[0]['name']; onPress: () => void }) {
+  return <Card tone="tinted" style={styles.nextAction}><View style={styles.nextIcon}><Icon name={icon} size={22} color={colors.espresso} /></View><View style={styles.flex}>{eyebrow ? <Text variant="caption" color={colors.cocoa}>{eyebrow}</Text> : null}<Text variant="title3">{title}</Text><Text variant="caption" color={colors.neutral800}>{body}</Text></View>{actionIcon ? <IconButton name={actionIcon} label={label ?? title} onPress={onPress} /> : label ? <Button label={label} variant="tertiary" onPress={onPress} style={styles.nextButton} /> : null}</Card>;
 }
 
 function BeginnerPath({ hasBean, beanId, cupCount }: { hasBean: boolean; beanId?: string; cupCount: number }) {
