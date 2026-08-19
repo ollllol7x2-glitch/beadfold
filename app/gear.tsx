@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { AutocompleteField, BottomSheet, Button, Card, Chip, Field, Icon, IconButton, InfoNote, PageHeader, Screen, Text } from '@/components/ui';
+import { AutocompleteField, BottomSheet, Button, Card, Chip, EmptySection, Field, Icon, IconButton, PageHeader, Screen, Text } from '@/components/ui';
 import { addUserGear, deleteUserGear, listCatalogGear, listUserGear, renameUserGear, searchGearSuggestions, setPrimaryGear, type GearSearchSuggestion } from '@/database/repository';
 import type { Gear } from '@/domain/types';
 import { colors, spacing } from '@/design-system/tokens';
@@ -86,12 +86,12 @@ export default function GearScreen() {
               <><View style={styles.gearCopy}><Text variant="title3">{item.name}</Text><Text variant="caption" color={colors.neutral600}>{gearDescription(item)}</Text></View>{item.isPrimary ? <View style={styles.primary}><Icon name="checkmark.circle.fill" size={18} color={colors.success} weight="semibold" /><Text variant="caption" color={colors.success}>주로 사용</Text></View> : null}<IconButton name="ellipsis" label={`${item.name} 관리`} onPress={() => setManageTarget(item)} /></>
             )}
           </View>
-        ))}</View> : <InfoNote body={`아직 등록한 ${labels[category]}가 없어요.`} />}
+        ))}</View> : <EmptySection body={`아직 등록한 ${labels[category]}가 없어요.`} />}
       </View>
 
       <View style={styles.sectionGroup}>
         <Text variant="title2">장비 목록</Text>
-        {filtered.length ? <View style={styles.gearList}>{filtered.map((item, index) => <View key={item.id} style={[styles.gearRow, index > 0 && styles.gearRowDivided]}><View style={styles.gearCopy}><Text variant="title3">{item.name}</Text><Text variant="caption" color={colors.neutral600}>{gearDescription(item)}</Text></View><AddGearButton item={item} onPress={() => void add(item)} /></View>)}</View> : <InfoNote body="이 분류의 기본 장비는 모두 추가했어요." />}
+        {filtered.length ? <View style={styles.gearList}>{filtered.map((item, index) => <View key={item.id} style={[styles.gearRow, index > 0 && styles.gearRowDivided]}><View style={styles.gearCopy}><Text variant="title3">{item.name}</Text><Text variant="caption" color={colors.neutral600}>{gearDescription(item)}</Text></View><AddGearButton item={item} onPress={() => void add(item)} /></View>)}</View> : <EmptySection body="이 분류의 기본 장비는 모두 추가했어요." />}
       </View>
 
       <Card>

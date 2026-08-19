@@ -41,6 +41,12 @@
         }
       ],
       [
+        "expo-camera",
+        {
+          "cameraPermission": "원두 라벨을 촬영해 등록할 수 있어요. 촬영 없이도 수동 등록이 가능합니다."
+        }
+      ],
+      [
         "expo-notifications",
         {
           "color": "#3B2E26"

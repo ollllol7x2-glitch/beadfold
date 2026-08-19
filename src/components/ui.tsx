@@ -204,6 +204,11 @@ export function InfoNote({ body, icon = 'info.circle', style, accessibilityLabel
   );
 }
 
+/** A quiet, flat placeholder for an empty section within an otherwise populated page. */
+export function EmptySection({ body, style, accessibilityLabel }: { body: string; style?: ViewStyle; accessibilityLabel?: string }) {
+  return <View accessible accessibilityLabel={accessibilityLabel ?? body} style={[styles.emptySection, style]}><Text color={colors.neutral600}>{body}</Text></View>;
+}
+
 export function Button({
   label,
   variant = 'primary',
@@ -636,6 +641,7 @@ const styles = StyleSheet.create({
   sectionTitle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.small },
   empty: { paddingVertical: spacing.large, paddingHorizontal: spacing.section, gap: spacing.small, alignItems: 'flex-start', backgroundColor: colors.creamDeep, borderRadius: radius.xl },
   emptyIcon: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
+  emptySection: { minHeight: 52, justifyContent: 'center', paddingHorizontal: spacing.default, paddingVertical: spacing.small, borderRadius: radius.large, backgroundColor: colors.creamDeep },
   navSafe: { backgroundColor: 'rgba(255,253,252,0.98)', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.neutral200 },
   nav: { height: 76, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center' },
   navItem: { flex: 1, minHeight: 64, alignItems: 'center', justifyContent: 'center' },

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { EmptyState, Icon, InfoNote, PageHeader, Screen, Text } from '@/components/ui';
+import { EmptySection, EmptyState, Icon, InfoNote, PageHeader, Screen, Text } from '@/components/ui';
 import { listCups, trackEvent } from '@/database/repository';
 import { localizedFlavor, satisfactionLabel, satisfactionScore, type Cup, type TasteValues } from '@/domain/types';
 import { colors, radius, spacing } from '@/design-system/tokens';
@@ -64,7 +64,7 @@ function ResultSummary({ cups, winner }: { cups: Cup[]; winner: number | null })
 }
 
 function DifferenceSection({ title, differences, empty }: { title: string; differences: Difference[]; empty: string }) {
-  return <View style={styles.section}><Text variant="title2">{title}</Text>{differences.length ? <View style={styles.differenceList}>{differences.map((difference) => <DifferenceRow key={difference.label} difference={difference} />)}</View> : <InfoNote body={empty} />}</View>;
+  return <View style={styles.section}><Text variant="title2">{title}</Text>{differences.length ? <View style={styles.differenceList}>{differences.map((difference) => <DifferenceRow key={difference.label} difference={difference} />)}</View> : <EmptySection body={empty} />}</View>;
 }
 
 function DifferenceRow({ difference }: { difference: Difference }) {

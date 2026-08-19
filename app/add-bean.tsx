@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Image, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import * as ImagePicker from 'expo-image-picker';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { AutocompleteField, BottomActionBar, BottomSheet, Button, Card, Chip, DateField, Field, goBackOrReplace, Icon, Screen, TaskHeader, Text } from '@/components/ui';
 import { createBean, defaultBeanTemplateSuggestions, getBean, matchKnowledgeFromLabel, searchBeanSuggestions, searchBeanTemplateSuggestions, searchKnowledgeSuggestions, trackEvent, updateBean, type BeanSearchSuggestion, type BeanTemplateSuggestion, type KnowledgeSearchSuggestion } from '@/database/repository';
 import type { BeanLot, BeanState, RoastLevel } from '@/domain/types';
@@ -33,6 +34,9 @@ export default function AddBeanScreen() {
   const [detailsOpen, setDetailsOpen] = useState(Boolean(editId || copyFromId));
   const [searchOpen, setSearchOpen] = useState(false);
   const [photoSourceOpen, setPhotoSourceOpen] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraFacing, setCameraFacing] = useState<'back' | 'front'>('back');
+  const [capturing, setCapturing] = useState(false);
   const [labelText, setLabelText] = useState('');
   const [labelError, setLabelError] = useState('');
   const [roaster, setRoaster] = useState('');
@@ -60,6 +64,8 @@ export default function AddBeanScreen() {
   const [saved, setSaved] = useState<BeanLot | null>(null);
   const [baseline, setBaseline] = useState('');
   const { fieldRef, focusField } = useFirstInvalidField();
+  const cameraRef = useRef<CameraView>(null);
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
 
   const formSnapshot = JSON.stringify({ name, weight, roaster, country, region, variety, process, roastDate, roastLevel, storageType, beanState, notes, description, imageUri });
   const isDirty = existing ? Boolean(baseline) && baseline !== formSnapshot : Boolean(name || weight || roaster || country || region || variety || process || roastDate || storageType || notes || description || imageUri);
@@ -103,31 +109,54 @@ export default function AddBeanScreen() {
     return () => { active = false; };
   }, [db, dismissedBeanSuggestion, name]);
 
-  const pickImage = async (camera: boolean) => {
-    const permission = camera ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) return setError(`${camera ? '카메라' : '사진 보관함'} 권한이 없어요. 이름만 입력해도 원두를 추가할 수 있어요.`);
-    const result = camera
-      ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7, base64: true })
-      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, base64: true });
-    if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
-      setImageUri(asset.uri);
-      setDetailsOpen(true);
-      void trackEvent(db, 'bean_photo_added', { source: camera ? 'camera' : 'gallery' });
-      if (!isBeanLabelOcrAvailable() || !asset.base64) {
-        setStatus('사진을 추가했어요. 봉투를 보면서 필요한 정보만 적어주세요.');
-        return;
-      }
-      setRecognizing(true);
-      setStatus('봉투 정보를 읽고 있어요. 잠시만 기다려주세요.');
-      try {
-        const result = await recognizeBeanLabel(asset.base64);
-        await applyOcrResult(result);
-      } catch (caught) {
-        setStatus(caught instanceof Error ? `${caught.message} 사진을 보며 직접 입력할 수 있어요.` : '자동 인식에 실패했어요. 사진을 보며 직접 입력할 수 있어요.');
-      } finally {
-        setRecognizing(false);
-      }
+  const applyImageAsset = async (asset: { uri: string; base64?: string | null }, source: 'camera' | 'gallery') => {
+    setImageUri(asset.uri);
+    setDetailsOpen(true);
+    void trackEvent(db, 'bean_photo_added', { source });
+    if (!isBeanLabelOcrAvailable() || !asset.base64) {
+      setStatus('사진을 추가했어요. 봉투를 보면서 필요한 정보만 적어주세요.');
+      return;
+    }
+    setRecognizing(true);
+    setStatus('봉투 정보를 읽고 있어요. 잠시만 기다려주세요.');
+    try {
+      const result = await recognizeBeanLabel(asset.base64);
+      await applyOcrResult(result);
+    } catch (caught) {
+      setStatus(caught instanceof Error ? `${caught.message} 사진을 보며 직접 입력할 수 있어요.` : '자동 인식에 실패했어요. 사진을 보며 직접 입력할 수 있어요.');
+    } finally {
+      setRecognizing(false);
+    }
+  };
+
+  const pickFromLibrary = async () => {
+    setPhotoSourceOpen(false);
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) return setError('사진 보관함 권한이 없어요. 이름만 입력해도 원두를 추가할 수 있어요.');
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, base64: true });
+    if (!result.canceled && result.assets[0]) await applyImageAsset(result.assets[0], 'gallery');
+  };
+
+  const openCamera = async () => {
+    setPhotoSourceOpen(false);
+    const permission = cameraPermission?.granted ? cameraPermission : await requestCameraPermission();
+    if (!permission.granted) return setError('카메라 권한이 없어요. 사진 보관함에서 선택하거나 이름만 입력해도 원두를 추가할 수 있어요.');
+    setCameraOpen(true);
+  };
+
+  const capturePhoto = async () => {
+    if (!cameraRef.current || capturing) return;
+    setCapturing(true);
+    try {
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.7, base64: true });
+      if (!photo) return;
+      setCameraOpen(false);
+      await applyImageAsset(photo, 'camera');
+    } catch (caught) {
+      setCameraOpen(false);
+      setError(caught instanceof Error ? `사진을 촬영하지 못했어요. ${caught.message}` : '사진을 촬영하지 못했어요.');
+    } finally {
+      setCapturing(false);
     }
   };
 
@@ -266,9 +295,20 @@ export default function AddBeanScreen() {
     </View> : null}
 
     <BottomSheet visible={photoSourceOpen} title="봉투 사진 추가" onClose={() => setPhotoSourceOpen(false)}>
-      <Button label="카메라로 촬영" icon="camera.fill" onPress={() => { setPhotoSourceOpen(false); void pickImage(true); }} />
-      <Button label="사진 보관함에서 선택" variant="secondary" onPress={() => { setPhotoSourceOpen(false); void pickImage(false); }} />
+      <Button label="카메라로 촬영" icon="camera.fill" onPress={() => void openCamera()} />
+      <Button label="사진 보관함에서 선택" variant="secondary" onPress={() => void pickFromLibrary()} />
     </BottomSheet>
+    <Modal visible={cameraOpen} animationType="slide" onRequestClose={() => setCameraOpen(false)}>
+      <View style={styles.cameraScreen}>
+        <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={cameraFacing} />
+        <View style={styles.cameraTop}><Pressable accessibilityRole="button" accessibilityLabel="봉투 촬영 닫기" onPress={() => setCameraOpen(false)} style={styles.cameraControl}><Icon name="xmark" size={25} color={colors.white} weight="bold" /></Pressable></View>
+        <View style={styles.cameraControls}>
+          <View style={styles.cameraControlPlaceholder} />
+          <Pressable accessibilityRole="button" accessibilityLabel="사진 촬영" accessibilityState={{ disabled: capturing }} disabled={capturing} onPress={() => void capturePhoto()} style={({ pressed }) => [styles.cameraShutter, pressed && styles.pressed, capturing && styles.disabled]}><View style={styles.cameraShutterInner} /></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="전면 카메라로 전환" onPress={() => setCameraFacing((current) => current === 'back' ? 'front' : 'back')} style={styles.cameraControl}><Icon name="arrow.triangle.2.circlepath" size={25} color={colors.white} /></Pressable>
+        </View>
+      </View>
+    </Modal>
     {exitConfirmation}
   </Screen>;
 }
@@ -309,5 +349,9 @@ const styles = StyleSheet.create({
   sourceIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
   quickCard: { gap: spacing.default }, disclosure: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: spacing.small, paddingVertical: spacing.compact }, disclosureCopy: { flex: 1, gap: 2 },
   details: { gap: spacing.default }, chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.compact }, flex: { flex: 1 },
-  preview: { width: '100%', height: 210, borderRadius: radius.large }, scanStatus: { flexDirection: 'row', alignItems: 'center', gap: spacing.small }, memo: { minHeight: 100, textAlignVertical: 'top' }, pressed: { opacity: 0.65 },
+  preview: { width: '100%', height: 210, borderRadius: radius.large }, scanStatus: { flexDirection: 'row', alignItems: 'center', gap: spacing.small }, memo: { minHeight: 100, textAlignVertical: 'top' }, pressed: { opacity: 0.65 }, disabled: { opacity: 0.45 },
+  cameraScreen: { flex: 1, backgroundColor: '#000' }, cameraTop: { position: 'absolute', top: 60, left: 20 },
+  cameraControls: { position: 'absolute', left: 24, right: 24, bottom: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  cameraControl: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.52)' }, cameraControlPlaceholder: { width: 52, height: 52 },
+  cameraShutter: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: colors.white }, cameraShutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: colors.white },
 });
