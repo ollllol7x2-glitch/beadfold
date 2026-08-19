@@ -3,8 +3,8 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import * as ImagePicker from 'expo-image-picker';
-import { BottomActionBar, Button, Card, Chip, DateField, Field, goBackOrReplace, Icon, Screen, TaskHeader, Text } from '@/components/ui';
-import { createBean, getBean, matchKnowledgeFromLabel, trackEvent, updateBean } from '@/database/repository';
+import { AutocompleteField, BottomActionBar, Button, Card, Chip, DateField, Field, goBackOrReplace, Icon, Screen, TaskHeader, Text } from '@/components/ui';
+import { createBean, defaultBeanTemplateSuggestions, getBean, matchKnowledgeFromLabel, searchBeanSuggestions, searchBeanTemplateSuggestions, searchKnowledgeSuggestions, trackEvent, updateBean, type BeanSearchSuggestion, type BeanTemplateSuggestion, type KnowledgeSearchSuggestion } from '@/database/repository';
 import type { BeanLot, BeanState, RoastLevel } from '@/domain/types';
 import { colors, radius, spacing } from '@/design-system/tokens';
 import { useFeedback } from '@/components/feedback';
@@ -48,6 +48,9 @@ export default function AddBeanScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [nameError, setNameError] = useState('');
   const [weightError, setWeightError] = useState('');
+  const [beanSuggestions, setBeanSuggestions] = useState<BeanSearchSuggestion[]>([]);
+  const [beanTemplateSuggestions, setBeanTemplateSuggestions] = useState<BeanTemplateSuggestion[]>(defaultBeanTemplateSuggestions);
+  const [dismissedBeanSuggestion, setDismissedBeanSuggestion] = useState('');
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
   const [recognizing, setRecognizing] = useState(false);
@@ -59,6 +62,7 @@ export default function AddBeanScreen() {
 
   const formSnapshot = JSON.stringify({ name, weight, roaster, country, region, variety, process, roastDate, roastLevel, storageType, beanState, notes, description, imageUri });
   const isDirty = existing ? Boolean(baseline) && baseline !== formSnapshot : Boolean(name || weight || roaster || country || region || variety || process || roastDate || storageType || notes || description || imageUri);
+  const visibleBeanTemplates = beanTemplateSuggestions.length ? beanTemplateSuggestions : defaultBeanTemplateSuggestions;
   const { requestExit, allowExit, exitConfirmation } = useUnsavedChangesGuard(isDirty);
 
   useEffect(() => {
@@ -81,6 +85,22 @@ export default function AddBeanScreen() {
     });
     return () => { active = false; };
   }, [copyFromId, db, editId]);
+
+  useEffect(() => {
+    const query = name.trim();
+    if (query.length < 2 || query === dismissedBeanSuggestion) return;
+    let active = true;
+    void searchBeanSuggestions(db, query, existing?.id).then((suggestions) => { if (active) setBeanSuggestions(suggestions); });
+    return () => { active = false; };
+  }, [db, dismissedBeanSuggestion, existing?.id, name]);
+
+  useEffect(() => {
+    const query = name.trim();
+    if (query && query === dismissedBeanSuggestion) return;
+    let active = true;
+    void searchBeanTemplateSuggestions(db, query).then((suggestions) => { if (active) setBeanTemplateSuggestions(suggestions); });
+    return () => { active = false; };
+  }, [db, dismissedBeanSuggestion, name]);
 
   const pickImage = async (camera: boolean) => {
     const permission = camera ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -204,7 +224,23 @@ export default function AddBeanScreen() {
 
     <Card style={styles.quickCard}>
       <View><Text variant="title2">빠른 추가</Text><Text color={colors.neutral600}>두 가지만 입력하면 저장할 수 있어요.</Text></View>
-      <Field ref={fieldRef('name')} label="원두 이름" value={name} onChangeText={(value) => { setName(value); setNameError(''); setError(''); }} placeholder="예: 과테말라 엘 인헤르토" error={nameError} />
+      <AutocompleteField ref={fieldRef('name')} label="원두 이름" value={name} onChangeText={(value) => { setName(value); setDismissedBeanSuggestion(''); setNameError(''); setError(''); }} placeholder="예: 과테말라 엘 인헤르토" error={nameError} suggestions={[
+        ...(name.trim().length >= 2 && name.trim() !== dismissedBeanSuggestion ? beanSuggestions.map((suggestion) => ({ id: `saved-${suggestion.bean.id}`, title: suggestion.bean.name, description: [suggestion.bean.roaster, suggestion.bean.country, suggestion.bean.region].filter(Boolean).join(' · ') || '이전에 등록한 원두', group: '이전에 등록한 원두' })) : []),
+        ...(name.trim().length >= 2 && name.trim() !== dismissedBeanSuggestion ? visibleBeanTemplates.map((template) => ({ id: `template-${template.id}`, title: template.name, description: template.description, group: '대표 원두 템플릿' })) : []),
+      ]} onSuggestionPress={(suggestion) => {
+        const template = visibleBeanTemplates.find((item) => `template-${item.id}` === suggestion.id);
+        if (template) {
+          setName(template.name); setDismissedBeanSuggestion(template.name); setBeanTemplateSuggestions([]);
+          setCountry(template.country); setRegion(template.region); setVariety(template.variety); setProcess(template.process); setDetailsOpen(true);
+          setStatus(`${template.name} 템플릿을 채웠어요. 로스터, 무게, 로스팅 날짜는 이번 구매분에 맞게 입력해주세요.`); return;
+        }
+        const selected = beanSuggestions.find((item) => `saved-${item.bean.id}` === suggestion.id)?.bean;
+        if (!selected) return;
+        setName(selected.name); setDismissedBeanSuggestion(selected.name); setBeanSuggestions([]);
+        setRoaster((current) => current || selected.roaster); setCountry((current) => current || selected.country); setRegion((current) => current || selected.region);
+        setVariety((current) => current || selected.variety); setProcess((current) => current || selected.process); setNotes((current) => current || selected.tastingNotes.join(', '));
+        setDetailsOpen(true); setStatus(`${selected.name}의 저장된 정보만 가져왔어요. 이번 구매분의 무게와 로스팅 날짜는 새로 입력해주세요.`);
+      }} />
       <Field ref={fieldRef('weight')} label="남은 양 (g)" value={weight} onChangeText={(value) => { setWeight(value); setWeightError(''); setError(''); }} keyboardType="decimal-pad" placeholder="예: 200" hint="봉투에 남은 양을 대략 적어도 괜찮아요." error={weightError} />
     </Card>
 
@@ -216,10 +252,10 @@ export default function AddBeanScreen() {
     {detailsOpen ? <View style={styles.details}>
       {!imageUri ? <Button label="봉투 사진 추가" variant="secondary" icon="camera.fill" onPress={() => void pickImage(false)} /> : null}
       <Field label="로스터" value={roaster} onChangeText={setRoaster} placeholder="선택 사항" />
-      <Field label="국가" value={country} onChangeText={setCountry} />
-      <Field label="산지" value={region} onChangeText={setRegion} />
-      <Field label="품종" value={variety} onChangeText={setVariety} />
-      <Field label="가공 방식" value={process} onChangeText={setProcess} />
+      <KnowledgeField category="country" label="국가" value={country} onChangeText={setCountry} />
+      <KnowledgeField category="region" label="산지" value={region} onChangeText={setRegion} parentName={country} onSelect={(suggestion) => { if (!country && suggestion.parentName) setCountry(suggestion.parentName); }} />
+      <KnowledgeField category="variety" label="품종" value={variety} onChangeText={setVariety} />
+      <KnowledgeField category="process" label="가공 방식" value={process} onChangeText={setProcess} />
       <DateField label="로스팅 날짜" value={roastDate} onChange={setRoastDate} hint="정확히 모르면 비워두세요." />
       <Text variant="label">로스팅 정도</Text><View style={styles.chips}>{roastLevels.map((level) => <Chip key={level.value} label={level.label} selected={roastLevel === level.value} onPress={() => setRoastLevel(level.value)} />)}</View>
       <Text variant="label">원두 상태</Text><View style={styles.chips}>{beanStates.map((state) => <Chip key={state.value} label={state.label} selected={beanState === state.value} onPress={() => setBeanState(state.value)} />)}</View>
@@ -236,6 +272,25 @@ function SourceAction({ icon, title, body, onPress }: { icon: Parameters<typeof 
   return <Pressable accessibilityRole="button" accessibilityLabel={`${title}. ${body}`} onPress={onPress} style={({ pressed }) => [styles.source, pressed && styles.pressed]}>
     <View style={styles.sourceIcon}><Icon name={icon} size={25} /></View><View style={styles.flex}><Text variant="label">{title}</Text><Text variant="caption" color={colors.neutral600}>{body}</Text></View>
   </Pressable>;
+}
+
+function KnowledgeField({ category, label, value, onChangeText, parentName, onSelect }: { category: 'country' | 'region' | 'variety' | 'process'; label: string; value: string; onChangeText: (value: string) => void; parentName?: string; onSelect?: (suggestion: KnowledgeSearchSuggestion) => void }) {
+  const db = useSQLiteContext();
+  const [suggestions, setSuggestions] = useState<KnowledgeSearchSuggestion[]>([]);
+  const [dismissedValue, setDismissedValue] = useState('');
+  useEffect(() => {
+    const query = value.trim();
+    if (!query || query === dismissedValue) return;
+    let active = true;
+    void searchKnowledgeSuggestions(db, category, query, parentName).then((next) => { if (active) setSuggestions(next); });
+    return () => { active = false; };
+  }, [category, db, dismissedValue, parentName, value]);
+  const visibleSuggestions = value.trim() && value.trim() !== dismissedValue ? suggestions : [];
+  return <AutocompleteField label={label} value={value} onChangeText={(next) => { setDismissedValue(''); onChangeText(next); }} suggestions={visibleSuggestions.map((suggestion) => ({ id: suggestion.id, title: suggestion.aliases[0] ? `${suggestion.name} · ${suggestion.aliases[0]}` : suggestion.name, description: suggestion.aliases.join(' · ') || suggestion.parentName || undefined }))} onSuggestionPress={(suggestion) => {
+    const selected = suggestions.find((item) => item.id === suggestion.id);
+    if (!selected) return;
+    onChangeText(selected.name); setDismissedValue(selected.name); setSuggestions([]); onSelect?.(selected);
+  }} />;
 }
 
 function beanFormSnapshot(bean: BeanLot) {

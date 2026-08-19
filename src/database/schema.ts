@@ -1,4 +1,5 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
+import { aliasesFor } from '@/domain/searchAliases';
 
 const countries = [
   'Ethiopia', 'Kenya', 'Rwanda', 'Burundi', 'Tanzania', 'Uganda', 'DR Congo', 'Yemen',
@@ -61,6 +62,15 @@ const equipment = [
   ['water', 'Mineral-rich Water', 'BEANFOLD', '{"hardness":"hard","tds":140}'],
 ] as const;
 
+const beanTemplates = [
+  ['template-ethiopia-yirgacheffe-washed', '예가체프 워시드', 'Ethiopia', 'Yirgacheffe', 'Heirloom', 'Washed', ['Ethiopia Yirgacheffe Washed', '에티오피아 예가체프 워시드']],
+  ['template-ethiopia-guji-natural', '구지 내추럴', 'Ethiopia', 'Guji', 'Heirloom', 'Natural', ['Ethiopia Guji Natural', '에티오피아 구지 내추럴']],
+  ['template-colombia-huila-washed', '우일라 워시드', 'Colombia', 'Huila', 'Castillo', 'Washed', ['Colombia Huila Washed', '콜롬비아 우일라 워시드']],
+  ['template-guatemala-antigua-washed', '안티구아 워시드', 'Guatemala', 'Antigua', 'Bourbon', 'Washed', ['Guatemala Antigua Washed', '과테말라 안티구아 워시드']],
+  ['template-kenya-nyeri-washed', '니에리 워시드', 'Kenya', 'Nyeri', 'SL28', 'Washed', ['Kenya Nyeri Washed', '케냐 니에리 워시드']],
+  ['template-brazil-cerrado-natural', '세하도 내추럴', 'Brazil', 'Cerrado Mineiro', 'Mundo Novo', 'Natural', ['Brazil Cerrado Natural', '브라질 세하도 내추럴']],
+] as const;
+
 export async function migrateDatabase(db: SQLiteDatabase) {
   await db.execAsync(`
     PRAGMA journal_mode = WAL;
@@ -106,7 +116,19 @@ export async function migrateDatabase(db: SQLiteDatabase) {
       name TEXT NOT NULL,
       brand TEXT NOT NULL,
       metadata_json TEXT NOT NULL DEFAULT '{}',
+      aliases_json TEXT NOT NULL DEFAULT '[]',
       verification_status TEXT NOT NULL DEFAULT 'curated'
+    );
+
+    CREATE TABLE IF NOT EXISTS bean_templates (
+      id TEXT PRIMARY KEY NOT NULL,
+      name TEXT NOT NULL,
+      country TEXT NOT NULL,
+      region TEXT NOT NULL,
+      variety TEXT NOT NULL,
+      process TEXT NOT NULL,
+      aliases_json TEXT NOT NULL DEFAULT '[]',
+      description TEXT NOT NULL DEFAULT ''
     );
 
     CREATE TABLE IF NOT EXISTS user_equipment (
@@ -224,6 +246,11 @@ export async function migrateDatabase(db: SQLiteDatabase) {
     await db.execAsync('ALTER TABLE beans ADD COLUMN archived_from_state TEXT;');
   }
 
+  const equipmentColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(equipment_catalog)');
+  if (!equipmentColumns.some((column) => column.name === 'aliases_json')) {
+    await db.execAsync("ALTER TABLE equipment_catalog ADD COLUMN aliases_json TEXT NOT NULL DEFAULT '[]';");
+  }
+
   const legacyTaste = JSON.stringify({ acidity: 3, sweetness: 3, body: 3, bitterness: 3, aroma: 3, aftertaste: 3, balance: 3 });
   const emptyTaste = JSON.stringify({ acidity: null, sweetness: null, body: null, bitterness: null, aroma: null, aftertaste: null, balance: null });
   await db.runAsync('UPDATE cups SET taste_json=? WHERE taste_json=?', emptyTaste, legacyTaste);
@@ -235,15 +262,16 @@ async function seedKnowledge(db: SQLiteDatabase, category: string, items: string
   for (const name of items) {
     const id = `${category}-${(parentName ? `${parentName}-` : '')}${name}`.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     await db.runAsync(
-      `INSERT OR IGNORE INTO knowledge_items (id, category, name, parent_name) VALUES (?, ?, ?, ?)`,
-      id, category, name, parentName,
+      `INSERT INTO knowledge_items (id, category, name, parent_name, aliases_json) VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT DO UPDATE SET aliases_json = excluded.aliases_json`,
+      id, category, name, parentName, JSON.stringify(aliasesFor(name)),
     );
   }
 }
 
 async function seedDatabase(db: SQLiteDatabase) {
   const seeded = await db.getFirstAsync<{ value: string }>(`SELECT value FROM app_meta WHERE key = 'seed_version'`);
-  if (seeded?.value === '2') return;
+  if (seeded?.value === '4') return;
 
   await db.withTransactionAsync(async () => {
     await seedKnowledge(db, 'country', countries);
@@ -256,14 +284,22 @@ async function seedDatabase(db: SQLiteDatabase) {
     for (const [category, name, brand, metadata] of equipment) {
       const id = `catalog-${category}-${name}`.toLowerCase().replace(/[^a-z0-9]+/g, '-');
       await db.runAsync(
-        `INSERT OR IGNORE INTO equipment_catalog (id, category, name, brand, metadata_json) VALUES (?, ?, ?, ?, ?)`,
-        id, category, name, brand, metadata,
+        `INSERT INTO equipment_catalog (id, category, name, brand, metadata_json, aliases_json) VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT(id) DO UPDATE SET aliases_json = excluded.aliases_json`,
+        id, category, name, brand, metadata, JSON.stringify(aliasesFor(name)),
+      );
+    }
+    for (const [id, name, country, region, variety, process, aliases] of beanTemplates) {
+      await db.runAsync(
+        `INSERT INTO bean_templates (id, name, country, region, variety, process, aliases_json, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(id) DO UPDATE SET name=excluded.name, country=excluded.country, region=excluded.region, variety=excluded.variety, process=excluded.process, aliases_json=excluded.aliases_json`,
+        id, name, country, region, variety, process, JSON.stringify(aliases), `${country} · ${region} · ${process}`,
       );
     }
     await db.runAsync(
       `INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('onboarding_complete', 'false', ?)`,
       new Date().toISOString(),
     );
-    await db.runAsync(`INSERT OR REPLACE INTO app_meta (key, value) VALUES ('seed_version', '2')`);
+    await db.runAsync(`INSERT OR REPLACE INTO app_meta (key, value) VALUES ('seed_version', '4')`);
   });
 }

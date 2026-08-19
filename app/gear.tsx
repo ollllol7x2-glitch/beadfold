@@ -1,9 +1,9 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { BottomSheet, Button, Card, Chip, Field, Icon, IconButton, InfoNote, PageHeader, Screen, Text } from '@/components/ui';
-import { addUserGear, deleteUserGear, listCatalogGear, listUserGear, renameUserGear, setPrimaryGear } from '@/database/repository';
+import { AutocompleteField, BottomSheet, Button, Card, Chip, Field, Icon, IconButton, InfoNote, PageHeader, Screen, Text } from '@/components/ui';
+import { addUserGear, deleteUserGear, listCatalogGear, listUserGear, renameUserGear, searchGearSuggestions, setPrimaryGear, type GearSearchSuggestion } from '@/database/repository';
 import type { Gear } from '@/domain/types';
 import { colors, spacing } from '@/design-system/tokens';
 import { ConfirmDialog } from '@/components/confirmDialog';
@@ -21,6 +21,7 @@ export default function GearScreen() {
   const [owned, setOwned] = useState<Gear[]>([]);
   const [customName, setCustomName] = useState('');
   const [customError, setCustomError] = useState('');
+  const [gearSuggestions, setGearSuggestions] = useState<GearSearchSuggestion[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [manageTarget, setManageTarget] = useState<Gear | null>(null);
@@ -34,6 +35,14 @@ export default function GearScreen() {
   }, [db]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
+
+  useEffect(() => {
+    const query = customName.trim();
+    if (query.length < 2) return;
+    let active = true;
+    void searchGearSuggestions(db, category, query, owned.map((item) => item.name)).then((suggestions) => { if (active) setGearSuggestions(suggestions); });
+    return () => { active = false; };
+  }, [category, customName, db, owned]);
 
   const add = async (gear: Gear, custom = false) => {
     await addUserGear(db, {
@@ -87,7 +96,11 @@ export default function GearScreen() {
 
       <Card>
         <Text variant="title3">목록에 없나요?</Text>
-        <Field ref={fieldRef('customName')} label="장비 이름" value={customName} onChangeText={(value) => { setCustomName(value); setCustomError(''); }} placeholder="직접 입력해주세요" error={customError} />
+        <AutocompleteField ref={fieldRef('customName')} label="장비 이름" value={customName} onChangeText={(value) => { setCustomName(value); setCustomError(''); }} placeholder="직접 입력해주세요" error={customError} suggestions={customName.trim().length >= 2 ? gearSuggestions.map((suggestion) => ({ id: suggestion.gear.id, title: suggestion.gear.name, description: suggestion.gear.brand || '기본 장비', group: '기본 장비' })) : []} onSuggestionPress={(suggestion) => {
+          const selected = gearSuggestions.find((item) => item.gear.id === suggestion.id)?.gear;
+          if (!selected) return;
+          setCustomName(''); setGearSuggestions([]); void add(selected);
+        }} />
         <Button label="직접 추가" onPress={() => {
           if (!customName.trim()) { setCustomError('장비 이름을 입력해주세요.'); focusField('customName'); return; }
           const name = customName.trim();

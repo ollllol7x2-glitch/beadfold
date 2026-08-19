@@ -239,7 +239,7 @@ export function Button({
       ]}
       {...props}
     >
-      {loading ? <ActivityIndicator color={foreground} /> : <View style={styles.buttonContent}>{icon ? <Icon name={icon} size={19} color={foreground} /> : null}<Text variant="label" style={styles.buttonText} color={foreground}>{label}</Text></View>}
+      {loading ? <ActivityIndicator color={foreground} /> : <View style={styles.buttonContent}>{icon ? <Icon name={icon} size={19} color={foreground} /> : null}<Text variant="label" style={[styles.buttonText, variant === 'tertiary' && styles.buttonTertiaryText]} color={foreground}>{label}</Text></View>}
     </Pressable>
   );
 }
@@ -252,7 +252,9 @@ export function IconButton({ name, label, onPress, variant = 'ghost' }: { name: 
   );
 }
 
-export const Field = forwardRef<TextInput, TextInputProps & { label: string; error?: string; hint?: string }>(
+export type FieldProps = TextInputProps & { label: string; error?: string; hint?: string };
+
+export const Field = forwardRef<TextInput, FieldProps>(
   function Field({ label, error, hint, style, inputMode, keyboardType, onChangeText, ...props }, ref) {
     const messageId = `${label.replace(/\s/g, '-')}-message`;
     const numericInputMode = keyboardType === 'decimal-pad' || keyboardType === 'numeric' ? 'decimal' : keyboardType === 'number-pad' ? 'numeric' : undefined;
@@ -275,6 +277,25 @@ export const Field = forwardRef<TextInput, TextInputProps & { label: string; err
         />
         {error ? <Text nativeID={messageId} accessibilityRole="alert" variant="caption" color={colors.error}>{error}</Text> : null}
         {!error && hint ? <Text nativeID={messageId} variant="caption" color={colors.neutral600}>{hint}</Text> : null}
+      </View>
+    );
+  },
+);
+
+export type AutocompleteSuggestion = { id: string; title: string; description?: string; group?: string; accessibilityLabel?: string };
+
+/** Input with small, inline suggestions. The caller controls the search source and selection effect. */
+export const AutocompleteField = forwardRef<TextInput, FieldProps & { suggestions: AutocompleteSuggestion[]; onSuggestionPress: (suggestion: AutocompleteSuggestion) => void }>(
+  function AutocompleteField({ suggestions, onSuggestionPress, ...fieldProps }, ref) {
+    const groupedSuggestions = suggestions.reduce<Record<string, AutocompleteSuggestion[]>>((groups, suggestion) => {
+      const key = suggestion.group ?? '';
+      groups[key] = [...(groups[key] ?? []), suggestion];
+      return groups;
+    }, {});
+    return (
+      <View style={styles.autocompleteWrap}>
+        <Field ref={ref} {...fieldProps} />
+        {suggestions.length ? <View style={styles.autocompleteGroups}>{Object.entries(groupedSuggestions).map(([group, items]) => <View key={group || 'suggestions'} style={styles.autocompleteGroup}>{group ? <Text variant="caption" color={colors.neutral600}>{group}</Text> : null}<ScrollView horizontal nestedScrollEnabled directionalLockEnabled keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} contentContainerStyle={styles.autocompleteChips}>{items.map((suggestion) => <Pressable key={suggestion.id} accessibilityRole="button" accessibilityLabel={suggestion.accessibilityLabel ?? suggestion.title} onPress={() => onSuggestionPress(suggestion)} style={({ pressed }) => [styles.autocompleteChip, pressed && styles.pressed]}><Text variant="body" numberOfLines={1} style={styles.autocompleteChipText}>{suggestion.title}</Text></Pressable>)}</ScrollView></View>)}</View> : null}
       </View>
     );
   },
@@ -586,12 +607,19 @@ const styles = StyleSheet.create({
   buttonDanger: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.error },
   buttonContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.compact },
   buttonText: { textAlign: 'center', fontSize: 15 },
+  buttonTertiaryText: { fontFamily: fonts.medium },
   pressed: { opacity: 0.62, transform: [{ scale: 0.985 }] },
   disabled: { opacity: 0.42 },
   iconButton: { width: 48, height: 48, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' },
   iconOutlined: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200 },
   iconFilled: { backgroundColor: colors.action },
   fieldWrap: { gap: spacing.compact },
+  autocompleteWrap: { gap: spacing.compact },
+  autocompleteGroups: { gap: spacing.small, padding: spacing.small, borderRadius: radius.medium, backgroundColor: '#F5F2EE' },
+  autocompleteGroup: { gap: spacing.xs },
+  autocompleteChips: { flexGrow: 0, gap: spacing.compact, paddingRight: spacing.default },
+  autocompleteChip: { flexShrink: 0, maxWidth: 220, minHeight: 40, justifyContent: 'center', paddingHorizontal: spacing.small, borderRadius: radius.full, borderWidth: 1, borderColor: colors.neutral200, backgroundColor: colors.neutral100 },
+  autocompleteChipText: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 20, color: colors.neutral600 },
   input: { minHeight: 54, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.medium, backgroundColor: colors.white, paddingHorizontal: 15, paddingVertical: 13, color: colors.charcoal, fontFamily: fonts.regular, fontSize: 16 },
   dateInput: { minHeight: 54, flexDirection: 'row', alignItems: 'center', gap: spacing.compact, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.medium, backgroundColor: colors.white, paddingHorizontal: 15, paddingVertical: 13 },
   inputError: { borderColor: colors.error, borderWidth: 2 },

@@ -1,5 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 import { emptyTasteValues, type BeanLot, type BrewSession, type Cup, type Gear, type Recipe, type Satisfaction, type TasteValues } from '@/domain/types';
+import { aliasesFor, matchesSearchQuery, normalizeSearchText, relatedAliases } from '@/domain/searchAliases';
 import { createId } from '@/utils/id';
 
 type Row = Record<string, string | number | null>;
@@ -104,13 +105,72 @@ export async function listKnowledge(db: SQLiteDatabase, category: string, query 
   );
 }
 
+export type KnowledgeSearchSuggestion = { id: string; name: string; parentName: string | null; aliases: string[] };
+
+export async function searchKnowledgeSuggestions(db: SQLiteDatabase, category: string, query: string, parentName?: string): Promise<KnowledgeSearchSuggestion[]> {
+  const rows = await db.getAllAsync<{ id: string; name: string; parent_name: string | null; aliases_json: string }>(
+    `SELECT id, name, parent_name, aliases_json FROM knowledge_items
+     WHERE category = ? AND (? = '' OR parent_name = ?) ORDER BY name`,
+    category, parentName ?? '', parentName ?? '',
+  );
+  const normalizedQuery = normalizeSearchText(query);
+  return rows.map((row) => ({ id: row.id, name: row.name, parentName: row.parent_name, aliases: parseJson<string[]>(row.aliases_json, []) }))
+    .filter((item) => matchesSearchQuery(query, [item.name, ...item.aliases]))
+    .sort((a, b) => Number(!normalizeSearchText(a.name).startsWith(normalizedQuery)) - Number(!normalizeSearchText(b.name).startsWith(normalizedQuery)) || a.name.localeCompare(b.name))
+    .slice(0, 5);
+}
+
 export async function matchKnowledgeFromLabel(db: SQLiteDatabase, label: string) {
-  const rows = await db.getAllAsync<{ id: string; category: string; name: string; parent_name: string | null }>(
-    `SELECT id, category, name, parent_name FROM knowledge_items
+  const rows = await db.getAllAsync<{ id: string; category: string; name: string; parent_name: string | null; aliases_json: string }>(
+    `SELECT id, category, name, parent_name, aliases_json FROM knowledge_items
      WHERE category IN ('country','region','variety','process') ORDER BY length(name) DESC`,
   );
-  const normalized = label.toLocaleLowerCase();
-  return rows.filter((row) => normalized.includes(row.name.toLocaleLowerCase()));
+  const normalized = normalizeSearchText(label);
+  return rows.filter((row) => [row.name, ...parseJson<string[]>(row.aliases_json, [])].some((term) => normalized.includes(normalizeSearchText(term))));
+}
+
+export type BeanSearchSuggestion = { bean: BeanLot; matchedBy: string };
+
+export type BeanTemplateSuggestion = { id: string; name: string; country: string; region: string; variety: string; process: string; aliases: string[]; description: string };
+
+export const defaultBeanTemplateSuggestions: BeanTemplateSuggestion[] = [
+  { id: 'template-ethiopia-yirgacheffe-washed', name: '예가체프 워시드', country: 'Ethiopia', region: 'Yirgacheffe', variety: 'Heirloom', process: 'Washed', aliases: ['Ethiopia Yirgacheffe Washed', '에티오피아 예가체프 워시드'], description: 'Ethiopia · Yirgacheffe · Washed' },
+  { id: 'template-ethiopia-guji-natural', name: '구지 내추럴', country: 'Ethiopia', region: 'Guji', variety: 'Heirloom', process: 'Natural', aliases: ['Ethiopia Guji Natural', '에티오피아 구지 내추럴'], description: 'Ethiopia · Guji · Natural' },
+  { id: 'template-colombia-huila-washed', name: '우일라 워시드', country: 'Colombia', region: 'Huila', variety: 'Castillo', process: 'Washed', aliases: ['Colombia Huila Washed', '콜롬비아 우일라 워시드'], description: 'Colombia · Huila · Washed' },
+  { id: 'template-guatemala-antigua-washed', name: '안티구아 워시드', country: 'Guatemala', region: 'Antigua', variety: 'Bourbon', process: 'Washed', aliases: ['Guatemala Antigua Washed', '과테말라 안티구아 워시드'], description: 'Guatemala · Antigua · Washed' },
+  { id: 'template-kenya-nyeri-washed', name: '니에리 워시드', country: 'Kenya', region: 'Nyeri', variety: 'SL28', process: 'Washed', aliases: ['Kenya Nyeri Washed', '케냐 니에리 워시드'], description: 'Kenya · Nyeri · Washed' },
+  { id: 'template-brazil-cerrado-natural', name: '세하도 내추럴', country: 'Brazil', region: 'Cerrado Mineiro', variety: 'Mundo Novo', process: 'Natural', aliases: ['Brazil Cerrado Natural', '브라질 세하도 내추럴'], description: 'Brazil · Cerrado Mineiro · Natural' },
+];
+
+export async function searchBeanTemplateSuggestions(db: SQLiteDatabase, query = ''): Promise<BeanTemplateSuggestion[]> {
+  let rows: { id: string; name: string; country: string; region: string; variety: string; process: string; aliases_json: string; description: string }[] = [];
+  try {
+    rows = await db.getAllAsync<{ id: string; name: string; country: string; region: string; variety: string; process: string; aliases_json: string; description: string }>('SELECT * FROM bean_templates ORDER BY name');
+  } catch {
+    // The first render can precede a local schema migration. The curated fallback keeps search usable.
+  }
+  const normalizedQuery = normalizeSearchText(query);
+  const templates = rows.length ? rows.map((row) => ({ id: row.id, name: row.name, country: row.country, region: row.region, variety: row.variety, process: row.process, aliases: parseJson<string[]>(row.aliases_json, []), description: row.description })) : defaultBeanTemplateSuggestions;
+  return templates
+    .filter((item) => !query || matchesSearchQuery(query, [item.name, item.country, item.region, item.variety, item.process, ...item.aliases, ...relatedAliases([item.name, item.country, item.region, item.variety, item.process].join(' '))]))
+    .sort((a, b) => Number(!normalizeSearchText(a.name).startsWith(normalizedQuery)) - Number(!normalizeSearchText(b.name).startsWith(normalizedQuery)) || a.name.localeCompare(b.name))
+    .slice(0, 5);
+}
+
+/** Searches only saved beans. Equipment and the knowledge catalog never enter these results. */
+export async function searchBeanSuggestions(db: SQLiteDatabase, query: string, excludedId?: string): Promise<BeanSearchSuggestion[]> {
+  const beans = await listBeans(db, true);
+  const results = beans.flatMap((bean) => {
+    const terms = [bean.name, bean.roaster, bean.country, bean.region, bean.variety, bean.process, ...relatedAliases([bean.name, bean.roaster, bean.country, bean.region, bean.variety, bean.process].join(' ')), ...aliasesFor(bean.country), ...aliasesFor(bean.region), ...aliasesFor(bean.variety), ...aliasesFor(bean.process)];
+    const matchedBy = terms.find((term) => matchesSearchQuery(query, [term]));
+    return bean.id !== excludedId && matchedBy ? [{ bean, matchedBy }] : [];
+  });
+  const normalizedQuery = normalizeSearchText(query);
+  return results.sort((a, b) => {
+    const aName = normalizeSearchText(a.bean.name);
+    const bName = normalizeSearchText(b.bean.name);
+    return Number(!aName.startsWith(normalizedQuery)) - Number(!bName.startsWith(normalizedQuery)) || b.bean.updatedAt.localeCompare(a.bean.updatedAt);
+  }).slice(0, 5);
 }
 
 export async function listCatalogGear(db: SQLiteDatabase, category?: Gear['category']): Promise<Gear[]> {
@@ -131,6 +191,26 @@ export async function listUserGear(db: SQLiteDatabase): Promise<Gear[]> {
     id: String(row.id), category: String(row.category) as Gear['category'], name: String(row.name), brand: String(row.brand),
     isPrimary: boolean(row.is_primary), isCustom: boolean(row.is_custom), metadata: parseJson(row.metadata_json, {}),
   }));
+}
+
+export type GearSearchSuggestion = { gear: Gear; matchedBy: string };
+
+/** Searches only the equipment catalog; user-owned equipment is intentionally excluded to prevent duplicates. */
+export async function searchGearSuggestions(db: SQLiteDatabase, category: Gear['category'], query: string, ownedNames: string[]): Promise<GearSearchSuggestion[]> {
+  const rows = await db.getAllAsync<Row>(
+    `SELECT id, category, name, brand, metadata_json, aliases_json FROM equipment_catalog WHERE category = ? ORDER BY brand, name`,
+    category,
+  );
+  const owned = new Set(ownedNames.map(normalizeSearchText));
+  const results = rows.flatMap((row) => {
+    const gear: Gear = { id: String(row.id), category: String(row.category) as Gear['category'], name: String(row.name), brand: String(row.brand), isPrimary: false, isCustom: false, metadata: parseJson(row.metadata_json, {}) };
+    if (owned.has(normalizeSearchText(gear.name))) return [];
+    const terms = [gear.name, gear.brand, ...parseJson<string[]>(row.aliases_json, [])];
+    const matchedBy = terms.find((term) => matchesSearchQuery(query, [term]));
+    return matchedBy ? [{ gear, matchedBy }] : [];
+  });
+  const normalizedQuery = normalizeSearchText(query);
+  return results.sort((a, b) => Number(!normalizeSearchText(a.gear.name).startsWith(normalizedQuery)) - Number(!normalizeSearchText(b.gear.name).startsWith(normalizedQuery))).slice(0, 5);
 }
 
 export async function addUserGear(db: SQLiteDatabase, gear: Omit<Gear, 'id'>): Promise<Gear> {
