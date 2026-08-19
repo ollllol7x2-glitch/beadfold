@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { Button, Card, Chip, Field, Icon, InfoNote, PageHeader, Screen, Text } from '@/components/ui';
+import { BottomSheet, Button, Card, Chip, Field, Icon, IconButton, InfoNote, PageHeader, Screen, Text } from '@/components/ui';
 import { addUserGear, deleteUserGear, listCatalogGear, listUserGear, renameUserGear, setPrimaryGear } from '@/database/repository';
 import type { Gear } from '@/domain/types';
 import { colors, spacing } from '@/design-system/tokens';
@@ -23,6 +23,7 @@ export default function GearScreen() {
   const [customError, setCustomError] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [manageTarget, setManageTarget] = useState<Gear | null>(null);
   const [removeTarget, setRemoveTarget] = useState<Gear | null>(null);
   const { fieldRef, focusField } = useFirstInvalidField();
 
@@ -54,55 +55,35 @@ export default function GearScreen() {
     <Screen header={<PageHeader title="내 장비" backLabel="보관함" backHref="/(tabs)/collection" />}>
       <View style={styles.row}>{categories.map((item) => <Chip key={item} label={labels[item]} selected={category === item} onPress={() => setCategory(item)} />)}</View>
 
-      <Text variant="title2">내가 쓰는 장비</Text>
-      {mine.length ? mine.map((item) => (
-        <Card key={item.id}>
-          {editingId === item.id ? (
-            <>
-              <Field label="장비 이름" value={editingName} onChangeText={setEditingName} autoFocus />
-              <View style={styles.actions}>
-                <Button label="취소" variant="secondary" onPress={() => setEditingId(null)} style={styles.flex} />
-                <Button label="이름 저장" onPress={() => {
-                  void renameUserGear(db, item.id, editingName).then(async () => {
-                    setEditingId(null);
-                    showFeedback('장비 이름을 수정했어요.');
-                    await load();
-                  });
-                }} style={styles.flex} />
-              </View>
-            </>
-          ) : (
-            <>
-              <View style={styles.gearHeading}>
-                <View style={styles.flex}>
-                  <Text variant="title3">{item.name}</Text>
-                  <Text color={colors.neutral600}>{item.brand || '직접 등록'}</Text>
+      <View style={styles.sectionGroup}>
+        <Text variant="title2">내가 쓰는 장비</Text>
+        {mine.length ? <View style={styles.gearList}>{mine.map((item, index) => (
+          <View key={item.id} style={[styles.gearRow, index > 0 && styles.gearRowDivided]}>
+            {editingId === item.id ? (
+              <View style={styles.editingRow}>
+                <Field label="장비 이름" value={editingName} onChangeText={setEditingName} autoFocus />
+                <View style={styles.actions}>
+                  <Button label="취소" variant="secondary" onPress={() => setEditingId(null)} style={styles.flex} />
+                  <Button label="이름 저장" onPress={() => {
+                    void renameUserGear(db, item.id, editingName).then(async () => {
+                      setEditingId(null);
+                      showFeedback('장비 이름을 수정했어요.');
+                      await load();
+                    });
+                  }} style={styles.flex} />
                 </View>
-                {item.isPrimary ? <View style={styles.primary}><Icon name="checkmark.circle.fill" size={18} color={colors.success} /><Text variant="label" color={colors.success}>주로 사용</Text></View> : null}
               </View>
-              <View style={styles.actions}>
-                <Button label="제거" variant="tertiary" onPress={() => setRemoveTarget(item)} style={styles.flex} />
-                {item.isCustom ? <Button label="이름 수정" variant="secondary" onPress={() => { setEditingId(item.id); setEditingName(item.name); }} style={styles.flex} /> : null}
-                {!item.isPrimary ? <Button label="주로 사용" onPress={() => {
-                  void setPrimaryGear(db, item.id, item.category).then(async () => {
-                    showFeedback(`${labels[item.category]} 대표 장비를 바꿨어요.`);
-                    await load();
-                  });
-                }} style={styles.flex} /> : null}
-              </View>
-            </>
-          )}
-        </Card>
-      )) : <InfoNote body={`아직 등록한 ${labels[category]}가 없어요.`} />}
+            ) : (
+              <><View style={styles.gearCopy}><Text variant="title3">{item.name}</Text><Text variant="caption" color={colors.neutral600}>{gearDescription(item)}</Text></View>{item.isPrimary ? <View style={styles.primary}><Icon name="checkmark.circle.fill" size={18} color={colors.success} weight="semibold" /><Text variant="caption" color={colors.success}>주로 사용</Text></View> : null}<IconButton name="ellipsis" label={`${item.name} 관리`} onPress={() => setManageTarget(item)} /></>
+            )}
+          </View>
+        ))}</View> : <InfoNote body={`아직 등록한 ${labels[category]}가 없어요.`} />}
+      </View>
 
-      <Text variant="title2">장비 목록</Text>
-      {filtered.length ? filtered.map((item) => (
-        <Card key={item.id}>
-          <Text variant="title3">{item.name}</Text>
-          <Text color={colors.neutral600}>{item.brand}</Text>
-          <Button label="내 장비에 추가" variant="secondary" onPress={() => void add(item)} />
-        </Card>
-      )) : <InfoNote body="이 분류의 기본 장비는 모두 추가했어요." />}
+      <View style={styles.sectionGroup}>
+        <Text variant="title2">장비 목록</Text>
+        {filtered.length ? <View style={styles.gearList}>{filtered.map((item, index) => <View key={item.id} style={[styles.gearRow, index > 0 && styles.gearRowDivided]}><View style={styles.gearCopy}><Text variant="title3">{item.name}</Text><Text variant="caption" color={colors.neutral600}>{gearDescription(item)}</Text></View><AddGearButton item={item} onPress={() => void add(item)} /></View>)}</View> : <InfoNote body="이 분류의 기본 장비는 모두 추가했어요." />}
+      </View>
 
       <Card>
         <Text variant="title3">목록에 없나요?</Text>
@@ -132,14 +113,37 @@ export default function GearScreen() {
           });
         }}
       />
+      <BottomSheet visible={manageTarget != null} title={manageTarget?.name ?? '장비 관리'} onClose={() => setManageTarget(null)}>
+        <View style={styles.sheetActions}>
+          {manageTarget && !manageTarget.isPrimary ? <Button label="주로 사용하는 장비로 설정" onPress={() => { const target = manageTarget; setManageTarget(null); void setPrimaryGear(db, target.id, target.category).then(async () => { showFeedback(`${labels[target.category]} 대표 장비를 바꿨어요.`); await load(); }); }} /> : null}
+          {manageTarget?.isCustom ? <Button label="이름 수정" variant="secondary" onPress={() => { setEditingId(manageTarget.id); setEditingName(manageTarget.name); setManageTarget(null); }} /> : null}
+          {manageTarget ? <Button label="내 장비에서 제거" variant="danger" onPress={() => { setRemoveTarget(manageTarget); setManageTarget(null); }} /> : null}
+        </View>
+      </BottomSheet>
     </Screen>
   );
+}
+
+function AddGearButton({ item, onPress }: { item: Gear; onPress: () => void }) {
+  return <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}을 내 장비에 추가`} onPress={onPress} style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}><Icon name="plus" size={21} color={colors.espresso} weight="bold" /></Pressable>;
+}
+
+function gearDescription(item: Gear) {
+  return item.brand || (item.isCustom ? '직접 등록한 장비' : '브랜드 정보 없음');
 }
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.compact },
   flex: { flex: 1 },
-  gearHeading: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.small },
-  primary: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 5 },
+  sectionGroup: { gap: spacing.small },
+  gearList: { overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.neutral200, borderRadius: 18, backgroundColor: colors.white },
+  gearRow: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: spacing.small, paddingHorizontal: spacing.small, paddingVertical: spacing.compact },
+  gearRowDivided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.neutral200 },
+  gearCopy: { flex: 1, gap: 2 },
+  editingRow: { flex: 1, gap: spacing.small },
+  primary: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  addButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.neutral200, borderRadius: 12, backgroundColor: colors.white },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.compact },
+  sheetActions: { gap: spacing.compact, paddingBottom: spacing.small },
+  pressed: { opacity: 0.62, transform: [{ scale: 0.985 }] },
 });

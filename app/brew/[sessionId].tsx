@@ -209,7 +209,7 @@ function ReadyState({ session, compact, onStart, onReview }: { session: BrewSess
 }
 
 function ReadyItem({ icon, label, value }: { icon: Parameters<typeof Icon>[0]['name']; label: string; value: string }) {
-  return <View style={styles.readyItem}><View style={styles.readyItemTop}><View style={styles.readyIcon}><Icon name={icon} size={18} color={colors.espresso} /></View><Icon name="checkmark.circle.fill" size={18} color={colors.success} /></View><View><Text variant="caption" color={colors.neutral600}>{label}</Text><Text variant="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.78}>{value}</Text></View></View>;
+  return <View style={styles.readyItem}><View style={styles.readyItemTop}><View style={styles.readyIcon}><Icon name={icon} size={18} color={colors.espresso} /></View><Icon name="checkmark.circle.fill" size={18} color={colors.success} weight="bold" /></View><View><Text variant="caption" color={colors.neutral600}>{label}</Text><Text variant="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.78}>{value}</Text></View></View>;
 }
 
 function CountdownState({ value }: { value: number }) {

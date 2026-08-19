@@ -3,7 +3,7 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import * as ImagePicker from 'expo-image-picker';
-import { BottomActionBar, Button, Card, Chip, Field, goBackOrReplace, Icon, Screen, TaskHeader, Text } from '@/components/ui';
+import { BottomActionBar, Button, Card, Chip, DateField, Field, goBackOrReplace, Icon, Screen, TaskHeader, Text } from '@/components/ui';
 import { createBean, getBean, matchKnowledgeFromLabel, trackEvent, updateBean } from '@/database/repository';
 import type { BeanLot, BeanState, RoastLevel } from '@/domain/types';
 import { colors, radius, spacing } from '@/design-system/tokens';
@@ -220,7 +220,7 @@ export default function AddBeanScreen() {
       <Field label="산지" value={region} onChangeText={setRegion} />
       <Field label="품종" value={variety} onChangeText={setVariety} />
       <Field label="가공 방식" value={process} onChangeText={setProcess} />
-      <Field label="로스팅 날짜" value={roastDate} onChangeText={setRoastDate} placeholder="YYYY-MM-DD" hint="정확히 모르면 비워두세요." />
+      <DateField label="로스팅 날짜" value={roastDate} onChange={setRoastDate} hint="정확히 모르면 비워두세요." />
       <Text variant="label">로스팅 정도</Text><View style={styles.chips}>{roastLevels.map((level) => <Chip key={level.value} label={level.label} selected={roastLevel === level.value} onPress={() => setRoastLevel(level.value)} />)}</View>
       <Text variant="label">원두 상태</Text><View style={styles.chips}>{beanStates.map((state) => <Chip key={state.value} label={state.label} selected={beanState === state.value} onPress={() => setBeanState(state.value)} />)}</View>
       <Field label="보관 방식" value={storageType} onChangeText={setStorageType} placeholder="예: 원두 봉투" />

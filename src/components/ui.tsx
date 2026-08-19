@@ -28,6 +28,7 @@ import Bell from 'lucide-react-native/icons/bell';
 import BellRing from 'lucide-react-native/icons/bell-ring';
 import BookOpen from 'lucide-react-native/icons/book-open';
 import Camera from 'lucide-react-native/icons/camera';
+import CalendarDays from 'lucide-react-native/icons/calendar-days';
 import Check from 'lucide-react-native/icons/check';
 import ChevronDown from 'lucide-react-native/icons/chevron-down';
 import ChevronLeft from 'lucide-react-native/icons/chevron-left';
@@ -72,6 +73,7 @@ import Vibrate from 'lucide-react-native/icons/vibrate';
 import Volume2 from 'lucide-react-native/icons/volume-2';
 import WandSparkles from 'lucide-react-native/icons/wand-sparkles';
 import X from 'lucide-react-native/icons/x';
+import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, radius, shadows, spacing, typography } from '@/design-system/tokens';
 import { listBeans } from '@/database/repository';
@@ -102,6 +104,7 @@ const iconMap = {
   'cup.and.heat.waves.fill': Coffee,
   'doc.on.doc': Copy,
   'camera.fill': Camera,
+  calendar: CalendarDays,
   'dial.medium': SlidersHorizontal,
   'drop.fill': Droplets,
   ellipsis: Ellipsis,
@@ -152,7 +155,7 @@ export function Text({ variant = 'body', color = colors.charcoal, style, ...prop
 
 export function Icon({ name, size = 22, color = colors.espresso, weight = 'regular' }: { name: SymbolName; size?: number; color?: string; weight?: 'regular' | 'semibold' | 'bold' }) {
   const Lucide = iconMap[name];
-  const strokeWidth = weight === 'regular' ? 1.75 : 2;
+  const strokeWidth = weight === 'regular' ? 1.5 : weight === 'semibold' ? 1.75 : 2;
   return <Lucide accessible={false} color={color} size={size} strokeWidth={strokeWidth} />;
 }
 
@@ -236,7 +239,7 @@ export function Button({
       ]}
       {...props}
     >
-      {loading ? <ActivityIndicator color={foreground} /> : <View style={styles.buttonContent}>{icon ? <Icon name={icon} size={19} color={foreground} weight="semibold" /> : null}<Text variant="label" style={styles.buttonText} color={foreground}>{label}</Text></View>}
+      {loading ? <ActivityIndicator color={foreground} /> : <View style={styles.buttonContent}>{icon ? <Icon name={icon} size={19} color={foreground} /> : null}<Text variant="label" style={styles.buttonText} color={foreground}>{label}</Text></View>}
     </Pressable>
   );
 }
@@ -244,14 +247,16 @@ export function Button({
 export function IconButton({ name, label, onPress, variant = 'ghost' }: { name: SymbolName; label: string; onPress: () => void; variant?: 'ghost' | 'outlined' | 'filled' }) {
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.iconButton, variant === 'outlined' && styles.iconOutlined, variant === 'filled' && styles.iconFilled, pressed && styles.pressed]}>
-      <Icon name={name} color={variant === 'filled' ? colors.cream : colors.espresso} weight="semibold" />
+      <Icon name={name} color={variant === 'filled' ? colors.cream : colors.espresso} weight={name === 'xmark' ? 'bold' : variant === 'filled' ? 'semibold' : 'regular'} />
     </Pressable>
   );
 }
 
 export const Field = forwardRef<TextInput, TextInputProps & { label: string; error?: string; hint?: string }>(
-  function Field({ label, error, hint, style, ...props }, ref) {
+  function Field({ label, error, hint, style, inputMode, keyboardType, onChangeText, ...props }, ref) {
     const messageId = `${label.replace(/\s/g, '-')}-message`;
+    const numericInputMode = keyboardType === 'decimal-pad' || keyboardType === 'numeric' ? 'decimal' : keyboardType === 'number-pad' ? 'numeric' : undefined;
+    const numericOnly = keyboardType === 'decimal-pad' || keyboardType === 'numeric' || keyboardType === 'number-pad';
     return (
       <View style={styles.fieldWrap}>
         <Text variant="label" nativeID={`${messageId}-label`}>{label}</Text>
@@ -261,6 +266,9 @@ export const Field = forwardRef<TextInput, TextInputProps & { label: string; err
           accessibilityHint={error ?? hint}
           allowFontScaling
           maxFontSizeMultiplier={2}
+          inputMode={inputMode ?? numericInputMode}
+          keyboardType={keyboardType}
+          onChangeText={(nextValue) => onChangeText?.(numericOnly ? normalizeNumericInput(nextValue, keyboardType === 'decimal-pad' || keyboardType === 'numeric') : nextValue)}
           placeholderTextColor={colors.neutral600}
           style={[styles.input, error && styles.inputError, style]}
           {...props}
@@ -271,6 +279,65 @@ export const Field = forwardRef<TextInput, TextInputProps & { label: string; err
     );
   },
 );
+
+function normalizeNumericInput(value: string, allowDecimal: boolean) {
+  const digits = value.replace(/[^0-9.]/g, '');
+  if (!allowDecimal) return digits.replace(/\./g, '');
+  const [whole = '', ...fraction] = digits.split('.');
+  return fraction.length ? `${whole}.${fraction.join('')}` : whole;
+}
+
+export function DateField({ label, value, onChange, error, hint, placeholder = '날짜 선택' }: { label: string; value: string; onChange: (value: string) => void; error?: string; hint?: string; placeholder?: string }) {
+  const [open, setOpen] = useState(false);
+  const selected = parseCalendarDate(value);
+  const [visibleMonth, setVisibleMonth] = useState(() => selected ?? new Date());
+  const messageId = `${label.replace(/\s/g, '-')}-message`;
+  const openCalendar = () => { setVisibleMonth(selected ?? new Date()); setOpen(true); };
+  const year = visibleMonth.getFullYear();
+  const month = visibleMonth.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const leadingDays = new Date(year, month, 1).getDay();
+  const monthLabel = new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long' }).format(visibleMonth);
+  return (
+    <View style={styles.fieldWrap}>
+      <Text variant="label" nativeID={`${messageId}-label`}>{label}</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel={`${label}, ${value ? formatCalendarDate(value) : placeholder}. 달력 열기`} accessibilityHint={error ?? hint} onPress={openCalendar} style={({ pressed }) => [styles.dateInput, error && styles.inputError, pressed && styles.pressed]}>
+        <Text color={value ? colors.charcoal : colors.neutral600} style={{ flex: 1 }}>{value ? formatCalendarDate(value) : placeholder}</Text>
+        <Icon name="calendar" size={20} color={colors.neutral600} />
+      </Pressable>
+      {error ? <Text nativeID={messageId} accessibilityRole="alert" variant="caption" color={colors.error}>{error}</Text> : null}
+      {!error && hint ? <Text nativeID={messageId} variant="caption" color={colors.neutral800}>{hint}</Text> : null}
+      <BottomSheet visible={open} title={label} onClose={() => setOpen(false)}>
+        <View style={styles.calendar}>
+          <View style={styles.calendarHeading}><IconButton name="chevron.left" label="이전 달" onPress={() => setVisibleMonth(new Date(year, month - 1, 1))} /><Text variant="title3">{monthLabel}</Text><IconButton name="chevron.right" label="다음 달" onPress={() => setVisibleMonth(new Date(year, month + 1, 1))} /></View>
+          <View style={styles.calendarWeek}>{['일', '월', '화', '수', '목', '금', '토'].map((day) => <Text key={day} variant="caption" color={colors.neutral600} style={styles.calendarWeekday}>{day}</Text>)}</View>
+          <View style={styles.calendarGrid}>{Array.from({ length: leadingDays }, (_, index) => <View key={`empty-${index}`} style={styles.calendarDay} />)}{Array.from({ length: daysInMonth }, (_, index) => {
+            const day = index + 1;
+            const dateValue = toCalendarValue(year, month, day);
+            const isSelected = value === dateValue;
+            return <Pressable key={dateValue} accessibilityRole="button" accessibilityLabel={`${year}년 ${month + 1}월 ${day}일`} accessibilityState={{ selected: isSelected }} onPress={() => { onChange(dateValue); setOpen(false); }} style={({ pressed }) => [styles.calendarDay, isSelected && styles.calendarDaySelected, pressed && styles.pressed]}><Text variant="label" color={isSelected ? colors.cream : colors.charcoal}>{day}</Text></Pressable>;
+          })}</View>
+          <Button label="날짜 지우기" variant="tertiary" onPress={() => { onChange(''); setOpen(false); }} />
+        </View>
+      </BottomSheet>
+    </View>
+  );
+}
+
+function parseCalendarDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatCalendarDate(value: string) {
+  const date = parseCalendarDate(value);
+  return date ? new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }).format(date) : value;
+}
+
+function toCalendarValue(year: number, month: number, day: number) {
+  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
 
 export function Chip({ label, selected, onPress, accessibilityLabel, icon, selectedStyle, selectedTextColor = colors.espresso }: { label: string; selected?: boolean; onPress?: () => void; accessibilityLabel?: string; icon?: SymbolName; selectedStyle?: ViewStyle; selectedTextColor?: string }) {
   return (
@@ -318,7 +385,7 @@ export function TaskHeader({ title, onClose, closeLabel = '닫기' }: { title: s
   return (
     <View style={styles.headerWrap}>
       <View style={styles.compactHeader}>
-        <Pressable accessibilityRole="button" accessibilityLabel={closeLabel} onPress={onClose} style={styles.headerSide}><Icon name="xmark" size={22} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={closeLabel} onPress={onClose} style={styles.headerSide}><Icon name="xmark" size={22} weight="bold" /></Pressable>
         <Text variant="title3" accessibilityRole="header" numberOfLines={1} style={styles.compactHeaderTitle}>{title}</Text>
         <View style={styles.headerSide} />
       </View>
@@ -390,7 +457,9 @@ export function BottomActionBar({ primaryLabel, onPrimaryPress, primaryDisabled,
   );
 }
 
-const navItems: { label: string; path: '/(tabs)' | '/(tabs)/journal' | '/(tabs)/collection' | '/(tabs)/profile'; icon: SymbolName; match: string[] }[] = [
+type NavigationIconName = 'house.fill' | 'book.closed.fill' | 'archivebox.fill' | 'person.crop.circle';
+
+const navItems: { label: string; path: '/(tabs)' | '/(tabs)/journal' | '/(tabs)/collection' | '/(tabs)/profile'; icon: NavigationIconName; match: string[] }[] = [
   { label: '홈', path: '/(tabs)', icon: 'house.fill', match: ['/(tabs)', '/', '/recipe/guided', '/notifications'] },
   { label: '기록', path: '/(tabs)/journal', icon: 'book.closed.fill', match: ['/journal', '/cup', '/compare'] },
   { label: '보관함', path: '/(tabs)/collection', icon: 'archivebox.fill', match: ['/collection', '/bean', '/recipe/manual', '/gear'] },
@@ -431,7 +500,7 @@ export function AppNavigation() {
             return <NavigationItem key={item.label} item={item} selected={selected} />;
           })}
           <Pressable accessibilityRole="button" accessibilityLabel="원두 추가, 브루잉 시작, 카페 기록 메뉴 열기" onPress={() => setAddOpen(true)} style={({ pressed }) => [styles.navItem, styles.navAddWrap, pressed && styles.pressed]}>
-            <View style={styles.navAdd}><Text variant="label" color={colors.cream}>원두·기록</Text></View>
+            <View style={styles.navAdd}><Icon name="plus" size={24} color={colors.cream} weight="bold" /></View>
           </Pressable>
           {navItems.slice(2).map((item) => {
           const selected = item.match.some((value) => pathname === value || (value !== '/' && pathname.startsWith(value)));
@@ -456,7 +525,38 @@ export function AppNavigation() {
 }
 
 function NavigationItem({ item, selected }: { item: (typeof navItems)[number]; selected: boolean }) {
-  return <Pressable accessibilityRole="tab" accessibilityLabel={`${item.label} 탭`} accessibilityState={{ selected }} onPress={() => router.navigate(item.path)} style={({ pressed }) => [styles.navItem, pressed && styles.pressed]}><View style={[styles.navIcon, selected && styles.navIconSelected]}><Icon name={item.icon} size={26} color={selected ? colors.espresso : colors.neutral600} weight={selected ? 'semibold' : 'regular'} /></View><Text variant="caption" color={selected ? colors.espresso : colors.neutral600} style={selected && styles.navLabelSelected}>{item.label}</Text></Pressable>;
+  return (
+    <Pressable
+      accessibilityRole="tab"
+      accessibilityLabel={`${item.label} 탭`}
+      accessibilityState={{ selected }}
+      onPress={() => router.navigate(item.path)}
+      style={({ pressed }) => [styles.navItem, pressed && styles.pressed]}
+    >
+      <View style={styles.navItemContent}>
+        <View style={styles.navIcon}>
+          <NavigationIcon name={item.icon} selected={selected} />
+        </View>
+        <Text variant="caption" color={selected ? colors.espresso : colors.neutral600} style={selected && styles.navLabelSelected}>{item.label}</Text>
+      </View>
+    </Pressable>
+  );
+}
+
+function NavigationIcon({ name, selected }: { name: NavigationIconName; selected: boolean }) {
+  const line = { stroke: colors.espresso, strokeWidth: 1.5, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+  return (
+    <Svg accessible={false} width={24} height={24} viewBox="0 0 24 24" fill="none">
+      {selected && name === 'house.fill' ? <Path d="M10.2236 1.89903C11.1801 1.08476 12.5686 1.03422 13.5791 1.74668L13.7764 1.89903L13.7783 1.90098L20.7734 7.89707C21.3923 8.41974 21.75 9.19002 21.75 10.0006V19.0006C21.7497 20.5145 20.514 21.7506 19 21.7506H5C3.486 21.7506 2.25035 20.5145 2.25 19.0006V10.0006C2.25 9.19002 2.60767 8.41974 3.22656 7.89707L10.2217 1.90098L10.2236 1.89903ZM10 12.9996C9.45018 12.9996 9.00029 13.3596 9 13.7994V20.1998H15V13.7994C14.9997 13.3596 14.5498 12.9996 14 12.9996H10Z" fill={colors.espresso} /> : null}
+      {selected && name === 'book.closed.fill' ? <Path d="M8 2.25C9.49122 2.25 10.8364 2.8959 12 3.94922C13.1636 2.8959 14.5088 2.25 16 2.25H20C21.5142 2.25 22.75 3.48579 22.75 5V17C22.75 18.5142 21.5142 19.75 20 19.75H16C14.8109 19.75 13.6453 20.3404 12.5469 21.5127C12.4051 21.6639 12.2073 21.75 12 21.75C11.7927 21.75 11.5949 21.6639 11.4531 21.5127C10.3547 20.3404 9.1891 19.75 8 19.75H4C2.48579 19.75 1.25 18.5142 1.25 17V5C1.25 3.48579 2.48579 2.25 4 2.25H8ZM12 6.34961C11.641 6.34961 11.3496 6.64101 11.3496 7V18C11.3496 18.359 11.641 18.6504 12 18.6504C12.359 18.6504 12.6504 18.359 12.6504 18V7C12.6504 6.64101 12.359 6.34961 12 6.34961Z" fill={colors.espresso} /> : null}
+      {selected && name === 'archivebox.fill' ? <><Path d="M21 3H3C2.44772 3 2 3.44772 2 4V7C2 7.55228 2.44772 8 3 8H21C21.5523 8 22 7.55228 22 7V4C22 3.44772 21.5523 3 21 3Z" fill={colors.espresso} stroke={colors.espresso} strokeWidth={1.5} strokeLinejoin="round" /><Path d="M20.75 19C20.75 20.5142 19.5142 21.75 18 21.75H6C4.48579 21.75 3.25 20.5142 3.25 19V9.75H20.75V19ZM10 11.3496C9.64101 11.3496 9.34961 11.641 9.34961 12C9.34961 12.359 9.64101 12.6504 10 12.6504H14C14.359 12.6504 14.6504 12.359 14.6504 12C14.6504 11.641 14.359 11.3496 14 11.3496H10ZM20 7.25C20.4142 7.25 20.75 7.58579 20.75 8V8.75H3.25V8C3.25 7.58579 3.58579 7.25 4 7.25H20Z" fill={colors.espresso} /></> : null}
+      {selected && name === 'person.crop.circle' ? <><Path d="M21.25 12C21.25 6.89137 17.1086 2.75 12 2.75C6.89137 2.75 2.75 6.89137 2.75 12C2.75 17.1086 6.89137 21.25 12 21.25C17.1086 21.25 21.25 17.1086 21.25 12ZM22.75 12C22.75 17.9371 17.9371 22.75 12 22.75C6.06294 22.75 1.25 17.9371 1.25 12C1.25 6.06294 6.06294 1.25 12 1.25C17.9371 1.25 22.75 6.06294 22.75 12Z" fill={colors.espresso} /><Path d="M12 2C17.5228 2 22 6.47715 22 12C22 15.3034 20.3969 18.2309 17.9277 20.0518C17.4251 16.586 15.0575 14 12 14C8.94246 14 6.57385 16.5859 6.07129 20.0518C3.60244 18.2308 2 15.3031 2 12C2 6.47715 6.47715 2 12 2ZM12 6C9.79086 6 8 7.79086 8 10C8 12.2091 9.79086 14 12 14C14.2091 14 16 12.2091 16 10C16 7.79086 14.2091 6 12 6Z" fill={colors.espresso} /></> : null}
+      {!selected && name === 'house.fill' ? <><Path d="M3 10.0001C3 9.41006 3.26 8.85006 3.71 8.47006L10.71 2.47006C11.45 1.84006 12.55 1.84006 13.29 2.47006L20.29 8.47006C20.74 8.85006 21 9.41006 21 10.0001V19.0001C21 20.1001 20.1 21.0001 19 21.0001H5C3.9 21.0001 3 20.1001 3 19.0001V10.0001Z" {...line} /><Path d="M15 21V13C15 12.45 14.55 12 14 12H10C9.45 12 9 12.45 9 13V21" {...line} /></> : null}
+      {!selected && name === 'book.closed.fill' ? <><Path d="M12 5V21" {...line} /><Path d="M20 19C21.1 19 22 18.1 22 17V5C22 3.9 21.1 3 20 3H16C14.54 3 13.19 3.73 12 5C10.81 3.73 9.46 3 8 3H4C2.9 3 2 3.9 2 5V17C2 18.1 2.9 19 4 19H8C9.46 19 10.81 19.73 12 21C13.19 19.73 14.54 19 16 19H20Z" {...line} /></> : null}
+      {!selected && name === 'archivebox.fill' ? <><Path d="M21 3H3C2.44772 3 2 3.44772 2 4V7C2 7.55228 2.44772 8 3 8H21C21.5523 8 22 7.55228 22 7V4C22 3.44772 21.5523 3 21 3Z" {...line} /><Path d="M4 8V19C4 20.1 4.9 21 6 21H18C19.1 21 20 20.1 20 19V8" {...line} /><Path d="M10 12H14" {...line} /></> : null}
+      {!selected && name === 'person.crop.circle' ? <><Path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" {...line} /><Path d="M12 14C14.2091 14 16 12.2091 16 10C16 7.79086 14.2091 6 12 6C9.79086 6 8 7.79086 8 10C8 12.2091 9.79086 14 12 14Z" {...line} /><Path d="M6.07007 20.06C6.57007 16.59 8.94007 14 12.0001 14C15.0601 14 17.4301 16.59 17.9301 20.06" {...line} /></> : null}
+    </Svg>
+  );
 }
 
 function SheetAction({ icon, title, body, onPress }: { icon: SymbolName; title: string; body: string; onPress: () => void }) {
@@ -468,7 +568,7 @@ const styles = StyleSheet.create({
   screenBackground: { ...StyleSheet.absoluteFill },
   scroller: { flex: 1 },
   staticContent: { flex: 1 },
-  content: { flexGrow: 1, paddingHorizontal: 20, paddingTop: spacing.small, paddingBottom: spacing.large, gap: spacing.roomy },
+  content: { flexGrow: 1, paddingHorizontal: 20, paddingTop: spacing.small, paddingBottom: spacing.large, gap: spacing.large },
   contentWithHeader: { paddingTop: spacing.default },
   contentNoNav: { paddingBottom: spacing.section },
   screenHeader: { zIndex: 20, ...(Platform.OS === 'web' ? { position: 'sticky' as never, top: 0 } : {}), paddingHorizontal: 20, paddingTop: spacing.compact, paddingBottom: spacing.small, backgroundColor: colors.cream, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.neutral200 },
@@ -491,6 +591,7 @@ const styles = StyleSheet.create({
   iconFilled: { backgroundColor: colors.action },
   fieldWrap: { gap: spacing.compact },
   input: { minHeight: 54, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.medium, backgroundColor: colors.white, paddingHorizontal: 15, paddingVertical: 13, color: colors.charcoal, fontFamily: fonts.regular, fontSize: 16 },
+  dateInput: { minHeight: 54, flexDirection: 'row', alignItems: 'center', gap: spacing.compact, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.medium, backgroundColor: colors.white, paddingHorizontal: 15, paddingVertical: 13 },
   inputError: { borderColor: colors.error, borderWidth: 2 },
   chip: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.full, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, justifyContent: 'center' },
   chipSelected: { backgroundColor: colors.terracotta, borderColor: colors.terracotta },
@@ -507,17 +608,24 @@ const styles = StyleSheet.create({
   emptyIcon: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
   navSafe: { backgroundColor: 'rgba(255,253,252,0.98)', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.neutral200 },
   nav: { height: 76, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center' },
-  navItem: { flex: 1, minHeight: 64, alignItems: 'center', justifyContent: 'center', gap: 3 },
-  navIcon: { width: 44, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
-  navIconSelected: { backgroundColor: colors.creamDeep },
-  navAddWrap: { flex: 1.25 },
-  navAdd: { minWidth: 102, height: 52, paddingHorizontal: 14, borderRadius: 26, backgroundColor: colors.action, alignItems: 'center', justifyContent: 'center', ...shadows.lifted },
+  navItem: { flex: 1, minHeight: 64, alignItems: 'center', justifyContent: 'center' },
+  navItemContent: { width: 64, height: 58, position: 'relative', alignItems: 'center', justifyContent: 'center', gap: 3 },
+  navIcon: { width: 44, height: 30, alignItems: 'center', justifyContent: 'center' },
+  navAddWrap: { flex: 1 },
+  navAdd: { width: 52, height: 52, borderRadius: radius.full, backgroundColor: colors.action, alignItems: 'center', justifyContent: 'center', ...shadows.lifted },
   navLabelSelected: { fontFamily: fonts.bold },
   sheetOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.overlay },
   sheet: { width: '100%', maxWidth: Platform.OS === 'web' ? 520 : undefined, alignSelf: 'center', gap: spacing.small, paddingHorizontal: 20, paddingTop: spacing.compact, paddingBottom: spacing.small, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, backgroundColor: colors.cream },
   sheetHandle: { width: 42, height: 4, alignSelf: 'center', borderRadius: radius.full, backgroundColor: colors.neutral400 },
   sheetHeading: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sheetActions: { gap: spacing.compact, paddingBottom: spacing.small },
+  calendar: { gap: spacing.compact, paddingBottom: spacing.small },
+  calendarHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  calendarWeek: { flexDirection: 'row' },
+  calendarWeekday: { width: '14.2857%', textAlign: 'center' },
+  calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  calendarDay: { width: '14.2857%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: radius.full },
+  calendarDaySelected: { backgroundColor: colors.action },
   sheetAction: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: spacing.small, padding: spacing.small, borderRadius: radius.large, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200 },
   sheetActionIcon: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.creamDeep },
   sheetActionCopy: { flex: 1, gap: 2 },

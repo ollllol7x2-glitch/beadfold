@@ -60,7 +60,7 @@ export default function RecordCupScreen() {
         const selected = satisfaction === value;
         const icon = value === 'loved' ? 'heart.fill' : value === 'good' ? 'face.smiling' : 'hand.thumbsdown.fill';
         return <Pressable key={value} accessibilityRole="button" accessibilityLabel={satisfactionLabel[value]} accessibilityState={{ selected }} onPress={() => { setSatisfaction(value); setSatisfactionError(''); }} style={({ pressed }) => [styles.satisfactionChoice, selected && styles.satisfactionChoiceSelected, pressed && styles.pressed]}>
-          <View style={[styles.ratingIcon, selected && styles.ratingIconSelected]}><Icon name={icon} size={23} color={selected ? colors.cream : colors.espresso} /></View>
+          <View style={[styles.ratingIcon, selected && styles.ratingIconSelected]}><Icon name={icon} size={23} color={selected ? colors.cream : colors.espresso} weight={selected ? 'semibold' : 'regular'} /></View>
           <Text variant="label" color={selected ? colors.cream : colors.charcoal}>{satisfactionLabel[value]}</Text>
         </Pressable>;
       })}</View>

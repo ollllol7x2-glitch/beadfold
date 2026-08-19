@@ -45,7 +45,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
       {feedback ? (
         <View pointerEvents="box-none" style={styles.layer}>
           <View accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.notice}>
-            <Icon name="checkmark.circle.fill" size={21} color={colors.cream} />
+            <Icon name="checkmark.circle.fill" size={21} color={colors.cream} weight="bold" />
             <Text variant="label" color={colors.cream} style={styles.message}>{feedback.message}</Text>
             {feedback.actionLabel && feedback.onAction ? (
               <Pressable
@@ -62,7 +62,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
               </Pressable>
             ) : null}
             <Pressable accessibilityRole="button" accessibilityLabel="알림 닫기" onPress={dismissFeedback} style={styles.close}>
-              <Icon name="xmark" size={18} color={colors.cream} />
+              <Icon name="xmark" size={18} color={colors.cream} weight="bold" />
             </Pressable>
           </View>
         </View>

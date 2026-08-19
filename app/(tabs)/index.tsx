@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { Image, ImageBackground, Pressable, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
+import Svg, { Path } from 'react-native-svg';
 import { BottomSheet, BrandMark, Button, Card, EmptyState, Icon, IconButton, Screen, SectionTitle, Text } from '@/components/ui';
 import { getInterruptedBrew, getSetting, listBeans, listCatalogGear, listCups, listUserGear } from '@/database/repository';
 import { generateGuidedRecipe } from '@/domain/recipeEngine';
@@ -86,7 +87,7 @@ export default function HomeScreen() {
     <View style={styles.brandRow}>
       <View style={styles.wordmark}><BrandMark size={26} /><Text variant="label" style={styles.wordmarkText}>BEANFOLD</Text></View>
       <View style={styles.notificationWrap}>
-        <IconButton name="bell" label={noticeCount ? `알림 ${noticeCount}개` : '알림'} onPress={() => router.push('/notifications' as never)} />
+        <Pressable accessibilityRole="button" accessibilityLabel={noticeCount ? `알림 ${noticeCount}개` : '알림'} onPress={() => router.push('/notifications' as never)} style={({ pressed }) => [styles.notificationButton, pressed && styles.pressed]}><NotificationBell /></Pressable>
         {noticeCount ? <View pointerEvents="none" style={styles.notificationBadge}><Text variant="caption" color={colors.cream} style={styles.notificationBadgeText}>{noticeCount > 9 ? '9+' : noticeCount}</Text></View> : null}
       </View>
     </View>
@@ -138,10 +139,21 @@ export default function HomeScreen() {
 
       {suggestedAction ? <NextAction {...suggestedAction} onPress={() => router.push(suggestedAction.path as never)} /> : null}
 
-      <SectionTitle title="최근에 내린 커피" action={<Button label="전체 보기" variant="tertiary" onPress={() => router.push('/(tabs)/journal')} />} />
-      {cups.length ? <View style={styles.cupList}>{cups.slice(0, 3).map((cup, index) => <CupRow key={cup.id} cup={cup} imageOffset={index} showDivider={index > 0} />)}</View> : <Card tone="tinted"><View style={styles.emptyCup}><Icon name="cup.and.saucer" size={30} color={colors.espresso} /><View style={styles.flex}><Text variant="title3">아직 기록이 없어요</Text><Text color={colors.neutral600}>첫 브루잉이 끝나면 여기에 바로 나타나요.</Text></View></View></Card>}
+      <View style={styles.recentSection}>
+        <SectionTitle title="최근에 내린 커피" action={<Button label="전체 보기" variant="tertiary" onPress={() => router.push('/(tabs)/journal')} />} />
+        {cups.length ? <View style={styles.cupList}>{cups.slice(0, 3).map((cup, index) => <CupRow key={cup.id} cup={cup} imageOffset={index} showDivider={index > 0} />)}</View> : <Card tone="tinted"><View style={styles.emptyCup}><Icon name="cup.and.saucer" size={30} color={colors.espresso} /><View style={styles.flex}><Text variant="title3">아직 기록이 없어요</Text><Text color={colors.neutral600}>첫 브루잉이 끝나면 여기에 바로 나타나요.</Text></View></View></Card>}
+      </View>
       <BottomSheet visible={beanPickerOpen} title="어떤 원두로 내릴까요?" onClose={() => setBeanPickerOpen(false)}><View style={styles.pickerList}>{availableBeans.map((bean) => <Pressable key={bean.id} accessibilityRole="button" accessibilityLabel={`${bean.name}로 내리기`} onPress={() => { setBeanPickerOpen(false); router.push(`/recipe/guided?beanId=${bean.id}`); }} style={styles.pickerItem}><View style={styles.pickerIcon}><Icon name="leaf.fill" size={22} /></View><View style={styles.flex}><Text variant="title3">{bean.name}</Text><Text variant="caption" color={colors.neutral600}>{bean.remainingWeightG}g 남음{bean.roaster ? ` · ${bean.roaster}` : ''}</Text></View><Icon name="chevron.right" size={18} color={colors.neutral600} /></Pressable>)}</View></BottomSheet>
     </Screen>
+  );
+}
+
+function NotificationBell() {
+  return (
+    <Svg accessible={false} width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Path d="M3.26192 15.326C2.69692 15.91 3.11092 17 3.99992 17H19.9999C20.8889 17 21.3029 15.91 20.7399 15.327C19.4099 13.956 17.9999 12.499 17.9999 8C17.9999 4.686 15.3139 2 11.9999 2C8.68592 2 5.99992 4.686 5.99992 8C5.99992 12.499 4.58892 13.956 3.26192 15.326Z" stroke={colors.espresso} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M15.5 17.5C15.5 19.433 13.933 21 12 21C10.067 21 8.5 19.433 8.5 17.5" stroke={colors.espresso} strokeWidth={1.5} />
+    </Svg>
   );
 }
 
@@ -229,6 +241,8 @@ const styles = StyleSheet.create({
   wordmark: { flexDirection: 'row', alignItems: 'center', gap: spacing.compact },
   wordmarkText: { letterSpacing: 4 },
   greeting: { gap: 2 },
+  // The action keeps a 48px touch target, so 4px here renders as a visual 12px below the title text.
+  recentSection: { gap: spacing.xs },
   heroWrap: { backgroundColor: colors.white, borderRadius: radius.xl, overflow: 'hidden', ...shadows.lifted },
   hero: { height: 310, justifyContent: 'flex-end' },
   heroImage: { borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl },
@@ -263,6 +277,7 @@ const styles = StyleSheet.create({
   pathLabelActive: { fontWeight: '700' },
   pathAction: { minHeight: 44, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: spacing.small },
   notificationWrap: { position: 'relative' },
+  notificationButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   notificationBadge: { position: 'absolute', minWidth: 19, height: 19, right: 2, top: 1, paddingHorizontal: 4, borderRadius: 10, backgroundColor: colors.terracotta, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.cream },
   notificationBadgeText: { fontSize: 10, lineHeight: 12, fontWeight: '700' },
   cupList: { backgroundColor: colors.white, borderRadius: radius.large, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.neutral200 },
