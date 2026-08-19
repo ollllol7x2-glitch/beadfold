@@ -619,7 +619,7 @@ const styles = StyleSheet.create({
   autocompleteGroup: { gap: spacing.xs },
   autocompleteChips: { flexGrow: 0, gap: spacing.compact, paddingRight: spacing.default },
   autocompleteChip: { flexShrink: 0, maxWidth: 220, minHeight: 40, justifyContent: 'center', paddingHorizontal: spacing.small, borderRadius: radius.full, borderWidth: 1, borderColor: colors.neutral200, backgroundColor: colors.neutral100 },
-  autocompleteChipText: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 20, color: colors.neutral600 },
+  autocompleteChipText: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 20, color: colors.neutral800 },
   input: { minHeight: 54, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.medium, backgroundColor: colors.white, paddingHorizontal: 15, paddingVertical: 13, color: colors.charcoal, fontFamily: fonts.regular, fontSize: 16 },
   dateInput: { minHeight: 54, flexDirection: 'row', alignItems: 'center', gap: spacing.compact, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.medium, backgroundColor: colors.white, paddingHorizontal: 15, paddingVertical: 13 },
   inputError: { borderColor: colors.error, borderWidth: 2 },
