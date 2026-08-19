@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
   readyMedia: { flex: 1, minHeight: 220, maxHeight: 310, borderRadius: radius.xl, overflow: 'hidden', backgroundColor: colors.creamDeep },
   readyMediaCompact: { minHeight: 175 },
   readyImage: { width: '100%', height: '68%' },
-  readyMediaCopy: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.compact, paddingHorizontal: spacing.small, flexWrap: 'wrap' },
+  readyMediaCopy: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.compact, paddingTop: spacing.default, paddingHorizontal: spacing.small, paddingBottom: spacing.small, flexWrap: 'wrap' },
   readyActions: { gap: 2 },
   startButton: { minHeight: 62 },
   countdown: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.small },
