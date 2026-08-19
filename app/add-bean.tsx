@@ -10,6 +10,8 @@ import type { BeanLot, BeanState, RoastLevel } from '@/domain/types';
 import { colors, radius, spacing } from '@/design-system/tokens';
 import { useFeedback } from '@/components/feedback';
 import { isBeanLabelOcrAvailable, recognizeBeanLabel, type BeanLabelOcrResult } from '@/services/beanLabelOcr';
+import { uploadBeanLabelPhoto } from '@/services/beanLabelStorage';
+import { useResolvedImageUri } from '@/hooks/useResolvedImageUri';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { useFirstInvalidField } from '@/hooks/useFirstInvalidField';
 
@@ -66,6 +68,7 @@ export default function AddBeanScreen() {
   const { fieldRef, focusField } = useFirstInvalidField();
   const cameraRef = useRef<CameraView>(null);
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const resolvedImageUri = useResolvedImageUri(imageUri);
 
   const formSnapshot = JSON.stringify({ name, weight, roaster, country, region, variety, process, roastDate, roastLevel, storageType, beanState, notes, description, imageUri });
   const isDirty = existing ? Boolean(baseline) && baseline !== formSnapshot : Boolean(name || weight || roaster || country || region || variety || process || roastDate || storageType || notes || description || imageUri);
@@ -109,8 +112,17 @@ export default function AddBeanScreen() {
     return () => { active = false; };
   }, [db, dismissedBeanSuggestion, name]);
 
-  const applyImageAsset = async (asset: { uri: string; base64?: string | null }, source: 'camera' | 'gallery') => {
-    setImageUri(asset.uri);
+  const applyImageAsset = async (asset: { uri: string; base64?: string | null; mimeType?: string | null }, source: 'camera' | 'gallery') => {
+    let persistedUri = asset.uri;
+    if (asset.base64) {
+      try {
+        persistedUri = await uploadBeanLabelPhoto({ base64: asset.base64, beanId: existing?.id, mimeType: asset.mimeType, source });
+        setStatus('봉투 사진을 안전하게 보관했어요.');
+      } catch (caught) {
+        setStatus(caught instanceof Error ? `${caught.message} 이 기기에서는 사진을 확인할 수 있어요.` : '사진을 클라우드에 보관하지 못했어요. 이 기기에서는 사진을 확인할 수 있어요.');
+      }
+    }
+    setImageUri(persistedUri);
     setDetailsOpen(true);
     void trackEvent(db, 'bean_photo_added', { source });
     if (!isBeanLabelOcrAvailable() || !asset.base64) {
@@ -247,7 +259,7 @@ export default function AddBeanScreen() {
       <Button label="정보 찾기" variant="secondary" onPress={() => void findFromLabel()} />
     </Card> : null}
 
-    {imageUri ? <Image source={{ uri: imageUri }} style={styles.preview} accessibilityLabel="선택한 원두 패키지 사진" /> : null}
+    {resolvedImageUri ? <Image source={{ uri: resolvedImageUri }} style={styles.preview} accessibilityLabel="선택한 원두 패키지 사진" /> : null}
     {recognizing ? <Card tone="tinted"><View style={styles.scanStatus}><Icon name="magnifyingglass" size={21} color={colors.espresso} /><View style={styles.flex}><Text variant="title3">봉투 정보 확인 중</Text><Text color={colors.neutral600}>원두명과 산지, 로스팅 정보를 읽고 있어요.</Text></View></View></Card> : null}
     {status ? <Text accessibilityLiveRegion="polite" color={colors.neutral600}>{status}</Text> : null}
     {error ? <Text accessibilityRole="alert" color={colors.error}>{error}</Text> : null}

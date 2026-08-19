@@ -8,6 +8,7 @@ import { getInterruptedBrew, getSetting, listBeans, listCatalogGear, listCups, l
 import { generateGuidedRecipe } from '@/domain/recipeEngine';
 import { localizedFlavor, satisfactionLabel, type BeanLot, type BrewSession, type Cup, type Gear, type Recipe } from '@/domain/types';
 import { colors, radius, shadows, spacing } from '@/design-system/tokens';
+import { useResolvedImageUri } from '@/hooks/useResolvedImageUri';
 
 type Experience = 'beginner' | 'casual' | 'advanced';
 type Goal = 'guided' | 'repeat' | 'explore';
@@ -54,6 +55,7 @@ export default function HomeScreen() {
   const availableBeans = beans.filter((bean) => bean.state !== 'finished' && bean.remainingWeightG > 0);
   const openedBean = availableBeans.find((bean) => bean.state === 'opened');
   const today = openedBean ?? availableBeans[0];
+  const todayImageUri = useResolvedImageUri(today?.imageUri);
   const todayCriterion = openedBean ? '개봉한 원두 중 최근에 사용한 원두' : '최근에 추가한 원두';
   const hour = new Date().getHours();
   const timeGreeting = hour < 11 ? '좋은 아침이에요' : hour < 17 ? '좋은 오후예요' : '좋은 저녁이에요';
@@ -112,8 +114,8 @@ export default function HomeScreen() {
       {today ? (
         <View style={styles.heroWrap}>
           <Pressable accessibilityRole="button" accessibilityLabel={`${today.name} 원두 상세 보기`} onPress={() => router.push(`/bean/${today.id}`)}>
-            {today.imageUri ? (
-              <ImageBackground source={{ uri: today.imageUri }} resizeMode="cover" style={styles.hero} imageStyle={styles.heroImage}>
+            {todayImageUri ? (
+              <ImageBackground source={{ uri: todayImageUri }} resizeMode="cover" style={styles.hero} imageStyle={styles.heroImage}>
                 <View style={styles.heroShade} />
                 <BeanHeroCopy bean={today} criterion={todayCriterion} />
               </ImageBackground>

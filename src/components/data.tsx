@@ -3,10 +3,12 @@ import type { BeanLot, Cup, Recipe } from '@/domain/types';
 import { beanStateLabel, localizedFlavor, roastLevelLabel, satisfactionLabel } from '@/domain/types';
 import { colors, radius, spacing } from '@/design-system/tokens';
 import { Card, Icon, Text } from './ui';
+import { useResolvedImageUri } from '@/hooks/useResolvedImageUri';
 
 const fallbackImage = require('../../assets/visuals/bean-still-life.png');
 
 export function BeanSummary({ bean }: { bean: BeanLot }) {
+  const imageUri = useResolvedImageUri(bean.imageUri);
   const remainingRatio = Math.max(0, Math.min(1, bean.initialWeightG ? bean.remainingWeightG / bean.initialWeightG : 0));
   const detail = [bean.process, bean.roastLevel === 'unknown' ? '' : roastLevelLabel[bean.roastLevel]].filter(Boolean).join(' · ');
   const origin = [bean.country, bean.region].filter(Boolean).join(' · ') || bean.roaster || '직접 등록한 원두';
@@ -14,7 +16,7 @@ export function BeanSummary({ bean }: { bean: BeanLot }) {
   return (
     <Card accessibilityLabel={`${bean.name}. ${[bean.country, bean.region, detail].filter(Boolean).join(', ')}. ${registeredAt} 등록. 남은 원두 ${bean.remainingWeightG}그램. ${beanStateLabel[bean.state]}.`} style={styles.beanCard}>
       <View style={styles.beanRow}>
-        <Image source={bean.imageUri ? { uri: bean.imageUri } : fallbackImage} resizeMode="cover" style={styles.beanImage} accessible={false} />
+        <Image source={imageUri ? { uri: imageUri } : fallbackImage} resizeMode="cover" style={styles.beanImage} accessible={false} />
         <View style={styles.flex}>
           <View style={styles.row}><Text variant="title3" style={styles.flex}>{bean.name}</Text><Icon name="chevron.right" size={16} color={colors.neutral400} /></View>
           <Text variant="caption" color={colors.neutral600} numberOfLines={1}>{origin} · {registeredAt}</Text>
