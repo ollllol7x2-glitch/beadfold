@@ -67,6 +67,7 @@ export const fonts = {
 export const typography = {
   display: { fontFamily: fonts.bold, fontSize: 34, lineHeight: 42, letterSpacing: -0.8 },
   title1: { fontFamily: fonts.bold, fontSize: 28, lineHeight: 36, letterSpacing: -0.5 },
+  headerTitle: { fontFamily: fonts.bold, fontSize: 24, lineHeight: 30, letterSpacing: -0.35 },
   title2: { fontFamily: fonts.semibold, fontSize: 22, lineHeight: 30, letterSpacing: -0.25 },
   title3: { fontFamily: fonts.semibold, fontSize: 18, lineHeight: 26, letterSpacing: -0.1 },
   bodyLarge: { fontFamily: fonts.regular, fontSize: 17, lineHeight: 26 },

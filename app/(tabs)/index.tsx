@@ -237,7 +237,7 @@ function CupRow({ cup, imageOffset, showDivider }: { cup: Cup; imageOffset: numb
 
 const styles = StyleSheet.create({
   screen: { paddingTop: spacing.section, gap: spacing.section },
-  brandRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  brandRow: { minHeight: 48, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   wordmark: { flexDirection: 'row', alignItems: 'center', gap: spacing.compact },
   wordmarkText: { letterSpacing: 4 },
   greeting: { gap: 2 },
