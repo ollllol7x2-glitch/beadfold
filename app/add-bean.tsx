@@ -3,7 +3,7 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import * as ImagePicker from 'expo-image-picker';
-import { AutocompleteField, BottomActionBar, Button, Card, Chip, DateField, Field, goBackOrReplace, Icon, Screen, TaskHeader, Text } from '@/components/ui';
+import { AutocompleteField, BottomActionBar, BottomSheet, Button, Card, Chip, DateField, Field, goBackOrReplace, Icon, Screen, TaskHeader, Text } from '@/components/ui';
 import { createBean, defaultBeanTemplateSuggestions, getBean, matchKnowledgeFromLabel, searchBeanSuggestions, searchBeanTemplateSuggestions, searchKnowledgeSuggestions, trackEvent, updateBean, type BeanSearchSuggestion, type BeanTemplateSuggestion, type KnowledgeSearchSuggestion } from '@/database/repository';
 import type { BeanLot, BeanState, RoastLevel } from '@/domain/types';
 import { colors, radius, spacing } from '@/design-system/tokens';
@@ -32,6 +32,7 @@ export default function AddBeanScreen() {
   const [initialWeight, setInitialWeight] = useState(0);
   const [detailsOpen, setDetailsOpen] = useState(Boolean(editId || copyFromId));
   const [searchOpen, setSearchOpen] = useState(false);
+  const [photoSourceOpen, setPhotoSourceOpen] = useState(false);
   const [labelText, setLabelText] = useState('');
   const [labelError, setLabelError] = useState('');
   const [roaster, setRoaster] = useState('');
@@ -207,7 +208,7 @@ export default function AddBeanScreen() {
   return <Screen showNavigation={false} header={<TaskHeader title={existing ? '원두 정보 수정' : copyFromId ? '새 구매 원두 추가' : '새 원두 추가'} onClose={() => requestExit(() => goBackOrReplace(existing ? `/bean/${existing.id}` : copyFromId ? `/bean/${copyFromId}` : '/(tabs)/collection'))} />} contentContainerStyle={styles.screen} footer={<BottomActionBar primaryLabel={existing ? '변경사항 저장' : '원두 추가'} primaryLoading={saving} onPrimaryPress={() => void save()} />}>
 
     {!existing ? <View style={styles.sources}>
-      <SourceAction icon="camera.fill" title="봉투 촬영" body="사진에서 필요한 정보를 찾아 채워요" onPress={() => void pickImage(true)} />
+      <SourceAction icon="camera.fill" title="봉투 촬영" body="촬영하거나 사진 보관함에서 불러와요" onPress={() => setPhotoSourceOpen(true)} />
       <SourceAction icon="magnifyingglass" title="이름으로 찾기" body="봉투 문구에서 정보를 찾아요" onPress={() => setSearchOpen((current) => !current)} />
     </View> : null}
 
@@ -250,7 +251,7 @@ export default function AddBeanScreen() {
     </Pressable>
 
     {detailsOpen ? <View style={styles.details}>
-      {!imageUri ? <Button label="봉투 사진 추가" variant="secondary" icon="camera.fill" onPress={() => void pickImage(false)} /> : null}
+      {!imageUri ? <Button label="봉투 사진 추가" variant="secondary" icon="camera.fill" onPress={() => setPhotoSourceOpen(true)} /> : null}
       <Field label="로스터" value={roaster} onChangeText={setRoaster} placeholder="선택 사항" />
       <KnowledgeField category="country" label="국가" value={country} onChangeText={setCountry} />
       <KnowledgeField category="region" label="산지" value={region} onChangeText={setRegion} parentName={country} onSelect={(suggestion) => { if (!country && suggestion.parentName) setCountry(suggestion.parentName); }} />
@@ -264,6 +265,10 @@ export default function AddBeanScreen() {
       <Field label="메모" value={description} onChangeText={setDescription} multiline placeholder="기억할 내용을 자유롭게 남겨주세요." style={styles.memo} />
     </View> : null}
 
+    <BottomSheet visible={photoSourceOpen} title="봉투 사진 추가" onClose={() => setPhotoSourceOpen(false)}>
+      <Button label="카메라로 촬영" icon="camera.fill" onPress={() => { setPhotoSourceOpen(false); void pickImage(true); }} />
+      <Button label="사진 보관함에서 선택" variant="secondary" onPress={() => { setPhotoSourceOpen(false); void pickImage(false); }} />
+    </BottomSheet>
     {exitConfirmation}
   </Screen>;
 }
