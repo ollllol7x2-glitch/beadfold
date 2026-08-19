@@ -531,14 +531,16 @@ function NavigationItem({ item, selected }: { item: (typeof navItems)[number]; s
       accessibilityLabel={`${item.label} 탭`}
       accessibilityState={{ selected }}
       onPress={() => router.navigate(item.path)}
-      style={({ pressed }) => [styles.navItem, pressed && styles.pressed]}
+      style={styles.navItem}
     >
-      <View style={styles.navItemContent}>
-        <View style={styles.navIcon}>
-          <NavigationIcon name={item.icon} selected={selected} />
+      {({ pressed }) => (
+        <View style={[styles.navItemContent, pressed && styles.navItemContentPressed]}>
+          <View style={styles.navIcon}>
+            <NavigationIcon name={item.icon} selected={selected} />
+          </View>
+          <Text variant="caption" color={selected ? colors.espresso : colors.neutral600} style={selected && styles.navLabelSelected}>{item.label}</Text>
         </View>
-        <Text variant="caption" color={selected ? colors.espresso : colors.neutral600} style={selected && styles.navLabelSelected}>{item.label}</Text>
-      </View>
+      )}
     </Pressable>
   );
 }
@@ -610,6 +612,7 @@ const styles = StyleSheet.create({
   nav: { height: 76, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center' },
   navItem: { flex: 1, minHeight: 64, alignItems: 'center', justifyContent: 'center' },
   navItemContent: { width: 64, height: 58, position: 'relative', alignItems: 'center', justifyContent: 'center', gap: 3 },
+  navItemContentPressed: { backgroundColor: colors.creamDeep, borderRadius: radius.medium, transform: [{ scale: 0.96 }] },
   navIcon: { width: 44, height: 30, alignItems: 'center', justifyContent: 'center' },
   navAddWrap: { flex: 1 },
   navAdd: { width: 52, height: 52, borderRadius: radius.full, backgroundColor: colors.action, alignItems: 'center', justifyContent: 'center', ...shadows.lifted },
