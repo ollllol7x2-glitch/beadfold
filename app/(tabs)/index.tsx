@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   pathAction: { minHeight: 44, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: spacing.small },
   notificationWrap: { position: 'relative' },
   notificationButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
-  notificationBadge: { position: 'absolute', minWidth: 19, height: 19, right: 2, top: 1, paddingHorizontal: 4, borderRadius: 10, backgroundColor: colors.terracotta, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.cream },
+  notificationBadge: { position: 'absolute', minWidth: 20, height: 20, right: 2, top: 4, paddingHorizontal: 4, borderRadius: 10, backgroundColor: colors.action, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.cream },
   notificationBadgeText: { fontSize: 10, lineHeight: 12, fontWeight: '700' },
   cupList: { backgroundColor: colors.white, borderRadius: radius.large, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.neutral200 },
   cupRow: { minHeight: 92, flexDirection: 'row', alignItems: 'center', gap: spacing.small, padding: spacing.small },
