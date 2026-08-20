@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { SQLiteProvider } from 'expo-sqlite';
 import * as SplashScreen from 'expo-splash-screen';
@@ -17,6 +17,7 @@ setupNotificationHandler();
 
 export default function RootLayout() {
   const [databaseError, setDatabaseError] = useState<Error | null>(null);
+  const [databaseAttempt, setDatabaseAttempt] = useState(0);
   const [fontsLoaded, fontError] = useFonts({
     'SUIT-Regular': require('../assets/fonts/SUIT-Regular.ttf'),
     'SUIT-Medium': require('../assets/fonts/SUIT-Medium.ttf'),
@@ -28,17 +29,48 @@ export default function RootLayout() {
     if (fontsLoaded || fontError) void SplashScreen.hideAsync();
   }, [fontError, fontsLoaded]);
 
+  useEffect(() => {
+    const locked = databaseError && /Access Handle|NoModificationAllowed|locked/i.test(databaseError.message);
+    if (!locked || databaseAttempt >= 2) return;
+    const retry = setTimeout(() => {
+      setDatabaseError(null);
+      setDatabaseAttempt((attempt) => attempt + 1);
+    }, 600);
+    return () => clearTimeout(retry);
+  }, [databaseAttempt, databaseError]);
+
+  useEffect(() => {
+    const invalidVfs = databaseError && /Invalid VFS state/i.test(databaseError.message);
+    if (!invalidVfs || Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const retryKey = 'beanfold-vfs-restart-at';
+    const previousRestart = Number(window.sessionStorage.getItem(retryKey) ?? 0);
+    if (Date.now() - previousRestart < 10_000) return;
+    window.sessionStorage.setItem(retryKey, String(Date.now()));
+    const restart = setTimeout(() => window.location.reload(), 700);
+    return () => clearTimeout(restart);
+  }, [databaseError]);
+
   if (!fontsLoaded && !fontError) return null;
   if (fontError) {
     return <View style={{ flex: 1, padding: 24, justifyContent: 'center', backgroundColor: colors.cream }}><Text accessibilityRole="alert">SUIT 글꼴을 불러오지 못했어요. 앱을 다시 시작해주세요.</Text></View>;
   }
   if (databaseError) {
     const locked = /Access Handle|NoModificationAllowed|locked/i.test(databaseError.message);
-    return <View style={{ flex: 1, padding: 24, justifyContent: 'center', gap: 16, backgroundColor: colors.cream }}><Text variant="title1" accessibilityRole="header">{locked ? 'BEANFOLD가 다른 탭에서 열려 있어요' : '저장 공간을 열지 못했어요'}</Text><Text color={colors.neutral600}>{locked ? '기록을 안전하게 지키기 위해 한 번에 한 탭에서 사용해주세요. 다른 탭을 닫고 이 페이지를 새로고침하세요.' : databaseError.message}</Text></View>;
+    const invalidVfs = /Invalid VFS state/i.test(databaseError.message);
+    const retryLabel = invalidVfs ? '페이지 다시 시작' : '다시 연결';
+    const retryDatabase = () => {
+      if (invalidVfs && Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.location.reload();
+        return;
+      }
+      setDatabaseError(null);
+      setDatabaseAttempt((attempt) => attempt + 1);
+    };
+    return <View style={{ flex: 1, padding: 24, justifyContent: 'center', gap: 16, backgroundColor: colors.cream }}><Text variant="title1" accessibilityRole="header">{locked ? '저장 공간에 다시 연결하고 있어요' : invalidVfs ? '저장 공간을 다시 시작하고 있어요' : '저장 공간을 열지 못했어요'}</Text><Text color={colors.neutral600}>{locked ? '이전 연결을 정리한 뒤 다시 시도하고 있어요. 잠시 후에도 열리지 않으면 아래 버튼을 눌러주세요.' : invalidVfs ? '임시 연결을 새로 시작하고 있어요. 자동으로 다시 열리지 않으면 아래 버튼을 눌러주세요.' : databaseError.message}</Text>{(locked || invalidVfs) ? <Pressable accessibilityRole="button" accessibilityLabel={retryLabel} onPress={retryDatabase} style={({ pressed }) => [{ alignSelf: 'flex-start', minHeight: 46, paddingHorizontal: 18, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.action }, pressed && { opacity: 0.7 }]}><Text variant="label" color={colors.white}>{retryLabel}</Text></Pressable> : null}</View>;
   }
 
   return (
-    <SQLiteProvider databaseName="beanfold.db" onInit={migrateDatabase} onError={setDatabaseError}>
+    <SQLiteProvider key={databaseAttempt} databaseName="beanfold.db" onInit={migrateDatabase} onError={setDatabaseError}>
       <AuthProvider>
         <FeedbackProvider>
           <StatusBar style="dark" />
