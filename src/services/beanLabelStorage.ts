@@ -16,7 +16,7 @@ export async function uploadBeanLabelPhoto(input: {
   mimeType?: string | null;
   source: PhotoSource;
 }) {
-  const user = await requireCurrentUser();
+  const user = await requireMember();
   const mimeType = allowedMimeType(input.mimeType);
   const extension = mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
   const objectPath = `${user.id}/bean-label-${Date.now()}-${randomToken()}.${extension}`;
@@ -39,7 +39,7 @@ export async function uploadBeanLabelPhoto(input: {
 export async function resolveBeanLabelPhotoUri(uri: string | null | undefined): Promise<string | null> {
   if (!uri) return null;
   if (!isStoredBeanLabelUri(uri)) return uri;
-  await requireCurrentUser();
+  await requireAuthenticatedUser();
   const { data, error } = await supabase.storage.from(bucket).createSignedUrl(fromStoredBeanLabelUri(uri), signedUrlLifetimeSec);
   if (error || !data?.signedUrl) return null;
   return data.signedUrl;
@@ -53,15 +53,17 @@ function fromStoredBeanLabelUri(uri: string) {
   return uri.slice(storedUriPrefix.length + bucket.length + 1);
 }
 
-async function requireCurrentUser() {
+async function requireMember() {
   const { data: sessionData } = await supabase.auth.getSession();
-  if (sessionData.session?.user) return sessionData.session.user;
-  const { data, error } = await supabase.auth.signInAnonymously();
-  if (error || !data.user) {
-    if (error?.code === 'anonymous_provider_disabled') throw new Error('클라우드 사진 보관을 시작하려면 Supabase에서 익명 로그인을 켜주세요.');
-    throw new Error(error?.message ?? '클라우드 사진 보관을 시작하지 못했어요.');
-  }
-  return data.user;
+  const user = sessionData.session?.user;
+  if (!user || user.is_anonymous) throw new Error('봉투 사진을 안전하게 보관하려면 로그인해주세요.');
+  return user;
+}
+
+async function requireAuthenticatedUser() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData.session?.user) throw new Error('사진을 확인하려면 이 기기에서 사용하던 계정으로 로그인해주세요.');
+  return sessionData.session.user;
 }
 
 function allowedMimeType(value: string | null | undefined) {

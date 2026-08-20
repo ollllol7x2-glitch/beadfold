@@ -10,6 +10,7 @@ import { colors } from '@/design-system/tokens';
 import { Text } from '@/components/ui';
 import { setupNotificationHandler } from '@/services/notificationHandler';
 import { FeedbackProvider } from '@/components/feedback';
+import { AuthProvider } from '@/components/auth';
 
 void SplashScreen.preventAutoHideAsync();
 setupNotificationHandler();
@@ -38,16 +39,21 @@ export default function RootLayout() {
 
   return (
     <SQLiteProvider databaseName="beanfold.db" onInit={migrateDatabase} onError={setDatabaseError}>
-      <FeedbackProvider>
-        <StatusBar style="dark" />
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.cream }, animation: 'none' }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="add-bean" options={{ presentation: 'modal', animation: 'none' }} />
-          <Stack.Screen name="record-cafe" options={{ presentation: 'modal', animation: 'none' }} />
-          <Stack.Screen name="record-cup/[cupId]" options={{ presentation: 'modal', animation: 'none' }} />
-        </Stack>
-      </FeedbackProvider>
+      <AuthProvider>
+        <FeedbackProvider>
+          <StatusBar style="dark" />
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.cream }, animation: 'none' }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="auth" options={{ presentation: 'modal', animation: 'none' }} />
+            <Stack.Screen name="account" options={{ animation: 'none' }} />
+            <Stack.Screen name="legal" options={{ animation: 'none' }} />
+            <Stack.Screen name="add-bean" options={{ presentation: 'modal', animation: 'none' }} />
+            <Stack.Screen name="record-cafe" options={{ presentation: 'modal', animation: 'none' }} />
+            <Stack.Screen name="record-cup/[cupId]" options={{ presentation: 'modal', animation: 'none' }} />
+          </Stack>
+        </FeedbackProvider>
+      </AuthProvider>
     </SQLiteProvider>
   );
 }
